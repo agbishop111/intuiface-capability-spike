@@ -276,6 +276,49 @@
       letter-spacing: 0.04em;
       color: #f1f5f9;
     }
+
+    /* Continue later + QR (Focus map) */
+    .continue-later {
+      margin-top: 2rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid #2a3441;
+    }
+
+    .continue-later-heading {
+      margin: 0 0 0.5rem;
+      font-size: 1.1rem;
+      font-weight: 650;
+    }
+
+    .continue-later-lede {
+      margin: 0 0 1rem;
+      color: #94a3b8;
+      font-size: 0.95rem;
+      max-width: 36rem;
+    }
+
+    .focus-qr-mount {
+      display: inline-block;
+      padding: 0.65rem;
+      background: #fff;
+      border-radius: 0.65rem;
+      line-height: 0;
+    }
+
+    .focus-qr-mount img {
+      display: block;
+      width: 200px;
+      height: 200px;
+    }
+
+    .qr-url-muted {
+      margin: 0.85rem 0 0;
+      font-size: 0.75rem;
+      color: #64748b;
+      word-break: break-all;
+      max-width: 100%;
+      font-variant-numeric: tabular-nums;
+    }
   </style>
 </head>
 <body>
@@ -304,14 +347,21 @@
     </header>
     <div class="focus-session-panel" id="focus-session-display" role="status" aria-live="polite"></div>
     <div id="focus-content-host"></div>
+    <section class="continue-later" id="focus-continue-section" aria-labelledby="continue-later-heading">
+      <h2 class="continue-later-heading" id="continue-later-heading">Continue later</h2>
+      <p class="continue-later-lede">Scan to access this session outside the kiosk.</p>
+      <div id="focus-qr-mount" class="focus-qr-mount" role="img" aria-label="QR code for session takeaway URL"></div>
+      <p id="focus-qr-url-text" class="qr-url-muted"></p>
+    </section>
   </div>
 
+  <!-- Feasibility: load QR renderer from CDN; swap for inlined script later for offline kiosk packages. -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
   <script>
-    /**
-     * Spike state: ordered selection IDs only (in-memory, no localStorage).
-     * First selected = first in array; used for Primary vs Supporting labels.
-     */
-    var selectedCapabilities = [];
+    /* -------------------------------------------------------------------------- */
+    /* Session logic                                                              */
+    /* -------------------------------------------------------------------------- */
 
     /**
      * Human-readable session token (e.g. GRID-4827, AI-7392, MAP-1843).
@@ -324,8 +374,69 @@
       return prefix + "-" + n;
     }
 
-    /** Set once at load; same object for the full page lifetime (no localStorage). */
+    /** Set once at load; same value for the full page lifetime (no localStorage). */
     var sessionId = generateSessionId();
+
+    /* -------------------------------------------------------------------------- */
+    /* QR logic                                                                   */
+    /* (Isolated so the CDN dependency can be replaced with an inlined library.) */
+    /* -------------------------------------------------------------------------- */
+
+    /**
+     * Full URL encoded into the QR code. Placeholder host for spike / future infra.
+     */
+    function getSessionTakeawayUrl() {
+      return "https://example.invalid/session?sessionId=" + encodeURIComponent(sessionId);
+    }
+
+    function clearQrMount(containerEl) {
+      while (containerEl.firstChild) {
+        containerEl.removeChild(containerEl.firstChild);
+      }
+    }
+
+    /**
+     * Draws a QR for payloadText into containerEl using the global QRCode (qrcodejs).
+     * Returns nothing; safe to call whenever sessionId-derived URL changes.
+     */
+    function mountQrCodeWithLibrary(containerEl, payloadText) {
+      if (typeof QRCode === "undefined") {
+        containerEl.textContent = "QR library not loaded (check network or CDN).";
+        return;
+      }
+      clearQrMount(containerEl);
+      new QRCode(containerEl, {
+        text: payloadText,
+        width: 200,
+        height: 200,
+        colorDark: "#0f1419",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.M
+      });
+    }
+
+    /** Syncs muted URL text + QR image to the current sessionId. */
+    function refreshSessionQrDisplay() {
+      var url = getSessionTakeawayUrl();
+      var urlEl = document.getElementById("focus-qr-url-text");
+      var mountEl = document.getElementById("focus-qr-mount");
+      if (urlEl) {
+        urlEl.textContent = url;
+      }
+      if (mountEl) {
+        mountQrCodeWithLibrary(mountEl, url);
+      }
+    }
+
+    /* -------------------------------------------------------------------------- */
+    /* Rendering logic                                                            */
+    /* -------------------------------------------------------------------------- */
+
+    /**
+     * Spike state: ordered selection IDs only (in-memory, no localStorage).
+     * First selected = first in array; used for Primary vs Supporting labels.
+     */
+    var selectedCapabilities = [];
 
     function updateSessionIdDisplays() {
       var exploreEl = document.getElementById("explore-session-display");
@@ -491,6 +602,7 @@
     });
 
     updateSessionIdDisplays();
+    refreshSessionQrDisplay();
     renderExploreView();
   </script>
 </body>
