@@ -319,6 +319,37 @@
       max-width: 100%;
       font-variant-numeric: tabular-nums;
     }
+
+    /* Developer handoff JSON preview (Focus map) */
+    .handoff-dev {
+      margin-top: 2rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid #2a3441;
+    }
+
+    .handoff-dev-explainer {
+      margin: 0 0 0.85rem;
+      color: #94a3b8;
+      font-size: 0.88rem;
+      max-width: 42rem;
+      line-height: 1.4;
+    }
+
+    .handoff-pre {
+      margin: 0;
+      padding: 1rem;
+      max-height: 22rem;
+      overflow: auto;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.72rem;
+      line-height: 1.35;
+      color: #cbd5e1;
+      background: #0c1220;
+      border: 1px solid #334155;
+      border-radius: 0.55rem;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
   </style>
 </head>
 <body>
@@ -353,6 +384,14 @@
       <div id="focus-qr-mount" class="focus-qr-mount" role="img" aria-label="QR code for session takeaway URL"></div>
       <p id="focus-qr-url-text" class="qr-url-muted"></p>
     </section>
+    <section class="handoff-dev" id="focus-handoff-section" aria-labelledby="handoff-dev-heading">
+      <h2 class="continue-later-heading" id="handoff-dev-heading">Developer handoff preview</h2>
+      <p class="handoff-dev-explainer">
+        Pretty-printed JSON below simulates the structured payload a future backend or API could receive
+        when a session is registered or updated. This spike does not transmit data; it only builds the object in memory.
+      </p>
+      <pre id="focus-handoff-pre" class="handoff-pre" aria-label="Handoff payload JSON"></pre>
+    </section>
   </div>
 
   <!-- qrcodejs 1.0.0 inlined for offline / file:// (MIT, davidshimjs/qrcodejs). -->
@@ -378,6 +417,9 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
 
     /** Set once at load; same value for the full page lifetime (no localStorage). */
     var sessionId = generateSessionId();
+
+    /** ISO-8601 timestamp for when this kiosk session started (with sessionId). */
+    var sessionCreatedAt = new Date().toISOString();
 
     /* -------------------------------------------------------------------------- */
     /* QR logic                                                                   */
@@ -440,6 +482,36 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
      */
     var selectedCapabilities = [];
 
+    /* -------------------------------------------------------------------------- */
+    /* Handoff payload (structured data for future API / persistence)             */
+    /* -------------------------------------------------------------------------- */
+
+    /**
+     * Versioned snapshot for a future handoff: session, URL, and capability picks.
+     * primarySelections / supportingSelections mirror Focus map (first two vs rest).
+     */
+    function buildHandoffPayload() {
+      return {
+        schemaVersion: 1,
+        sessionId: sessionId,
+        createdAt: sessionCreatedAt,
+        takeawayUrl: getSessionTakeawayUrl(),
+        selectedCapabilities: selectedCapabilities.slice(),
+        primarySelections: selectedCapabilities.slice(0, 2),
+        supportingSelections: selectedCapabilities.slice(2),
+        handoffStatus: "in-kiosk-demo-only"
+      };
+    }
+
+    /** Updates the Focus map JSON preview (pre#focus-handoff-pre) from buildHandoffPayload(); no network. */
+    function refreshHandoffDeveloperPreview() {
+      var pre = document.getElementById("focus-handoff-pre");
+      if (!pre) {
+        return;
+      }
+      pre.textContent = JSON.stringify(buildHandoffPayload(), null, 2);
+    }
+
     function updateSessionIdDisplays() {
       var exploreEl = document.getElementById("explore-session-display");
       var focusEl = document.getElementById("focus-session-display");
@@ -482,6 +554,7 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
         selectedCapabilities.splice(idx, 1);
       }
       renderExploreView();
+      refreshHandoffDeveloperPreview();
       if (document.getElementById("view-focus").classList.contains("is-active")) {
         renderFocusMapView();
       }
@@ -562,40 +635,42 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
           "Go back to explore and tap the stars on the cards you care about. " +
           "Your first two selections will show as Primary on this map.";
         host.appendChild(empty);
-        return;
+      } else {
+        var ul = document.createElement("ul");
+        ul.className = "focus-list";
+
+        for (var i = 0; i < selectedCapabilities.length; i++) {
+          var id = selectedCapabilities[i];
+          var cap = capabilityById(id);
+          if (!cap) continue;
+
+          var li = document.createElement("li");
+          li.className = "focus-item";
+
+          var badge = document.createElement("span");
+          badge.className = "badge " + (i < 2 ? "badge-primary" : "badge-supporting");
+          badge.textContent = i < 2 ? "Primary" : "Supporting";
+          li.appendChild(badge);
+
+          var h3 = document.createElement("h3");
+          h3.textContent = cap.title;
+          li.appendChild(h3);
+
+          var p = document.createElement("p");
+          p.textContent = cap.description;
+          li.appendChild(p);
+
+          ul.appendChild(li);
+        }
+
+        host.appendChild(ul);
       }
 
-      var ul = document.createElement("ul");
-      ul.className = "focus-list";
-
-      for (var i = 0; i < selectedCapabilities.length; i++) {
-        var id = selectedCapabilities[i];
-        var cap = capabilityById(id);
-        if (!cap) continue;
-
-        var li = document.createElement("li");
-        li.className = "focus-item";
-
-        var badge = document.createElement("span");
-        badge.className = "badge " + (i < 2 ? "badge-primary" : "badge-supporting");
-        badge.textContent = i < 2 ? "Primary" : "Supporting";
-        li.appendChild(badge);
-
-        var h3 = document.createElement("h3");
-        h3.textContent = cap.title;
-        li.appendChild(h3);
-
-        var p = document.createElement("p");
-        p.textContent = cap.description;
-        li.appendChild(p);
-
-        ul.appendChild(li);
-      }
-
-      host.appendChild(ul);
+      refreshHandoffDeveloperPreview();
     }
 
     document.getElementById("btn-to-focus").addEventListener("click", function () {
+      console.log("[handoff-payload]", buildHandoffPayload());
       showView("focus");
     });
 
@@ -606,6 +681,7 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
     updateSessionIdDisplays();
     refreshSessionQrDisplay();
     renderExploreView();
+    refreshHandoffDeveloperPreview();
   </script>
 </body>
 </html>
