@@ -40,13 +40,21 @@
     }
 
     header.app-header {
+      position: sticky;
+      top: 0;
+      z-index: 5;
       display: flex;
       flex-wrap: wrap;
       align-items: center;
       justify-content: space-between;
       gap: 0.75rem;
-      margin-bottom: 1.25rem;
-      padding-bottom: 1rem;
+      /* Negative side/top margins push the bar to the view edges so the
+         backdrop fills the whole sticky bar, not just the padded center. */
+      margin: -1.25rem -1.25rem 1.25rem;
+      padding: 1.25rem 1.25rem 1rem;
+      background: rgba(15, 20, 25, 0.92);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
       border-bottom: 1px solid #2a3441;
     }
 
@@ -57,15 +65,36 @@
       letter-spacing: -0.02em;
     }
 
+    /* Right-side cluster: holds count CTA + optional Clear selections. */
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .btn-clear {
+      min-height: 2.25rem;
+      padding: 0 0.85rem;
+      font-size: 0.85rem;
+    }
+
+    .btn-clear.is-armed {
+      background: #422006;
+      border-color: #f59e0b;
+      color: #fbbf24;
+    }
+
     /* Persistent spike context (both views) */
     .spike-disclaimer {
       margin: -0.35rem 0 0.75rem;
       padding: 0;
       max-width: 36rem;
-      font-size: 0.68rem;
+      font-size: 0.7rem;
       font-weight: 400;
       line-height: 1.3;
-      color: #64748b;
+      color: #94a3b8;
       letter-spacing: 0.02em;
     }
 
@@ -94,6 +123,12 @@
       background: #2563eb;
     }
 
+    .btn-primary:disabled {
+      background: #334155;
+      color: #94a3b8;
+      cursor: not-allowed;
+    }
+
     .btn-ghost {
       background: #1e293b;
       color: #e8ecf1;
@@ -105,6 +140,7 @@
     }
 
     .btn-star {
+      position: relative;
       min-width: 3rem;
       min-height: 3rem;
       padding: 0;
@@ -120,6 +156,144 @@
       background: #422006;
       color: #fbbf24;
       border-color: #f59e0b;
+    }
+
+    /* Order badge: shows pick order on selected stars. Color encodes primary vs supporting. */
+    .star-order-badge {
+      position: absolute;
+      top: -0.4rem;
+      right: -0.4rem;
+      min-width: 1.4rem;
+      height: 1.4rem;
+      padding: 0 0.35rem;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.72rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+      color: #fff;
+      border: 2px solid #0f1419;
+      pointer-events: none;
+    }
+
+    .star-order-badge.is-primary {
+      background: #3b82f6;
+    }
+
+    .star-order-badge.is-supporting {
+      background: #64748b;
+    }
+
+    /* Explore: guided entry question — visually distinct from capability cards
+       so it reads as a "start here" step, not another card in the grid.
+       Blue-tinted callout, accent border, soft halo glow.                    */
+    .guided-entry {
+      position: relative;
+      margin: 0 0 1.75rem;
+      padding: 1.25rem 1.35rem 1.4rem;
+      background:
+        linear-gradient(155deg, #16243e 0%, #172238 60%, #16213a 100%);
+      border: 1px solid #334d80;
+      border-radius: 1rem;
+      box-shadow:
+        inset 0 1px 0 rgba(147, 197, 253, 0.08),
+        0 8px 24px -16px rgba(59, 130, 246, 0.45);
+    }
+
+    .guided-entry-step-label {
+      display: inline-block;
+      margin-bottom: 0.7rem;
+      padding: 0.28rem 0.6rem;
+      font-size: 0.66rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: #bfdbfe;
+      background: #1e3a5f;
+      border: 1px solid #1e40af;
+      border-radius: 999px;
+    }
+
+    .guided-entry-heading {
+      margin: 0 0 0.5rem;
+      font-size: 1.05rem;
+      font-weight: 650;
+      color: #f1f5f9;
+      line-height: 1.4;
+    }
+
+    .guided-entry-helper {
+      margin: 0 0 0.85rem;
+      font-size: 0.82rem;
+      color: #94a3b8;
+      line-height: 1.4;
+    }
+
+    .guided-entry-buttons {
+      display: grid;
+      gap: 0.5rem;
+      grid-template-columns: 1fr;
+    }
+
+    @media (min-width: 640px) {
+      .guided-entry-buttons {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    .btn-response {
+      display: inline-flex;
+      align-items: center;
+      justify-content: flex-start;
+      text-align: left;
+      min-height: 2.75rem;
+      padding: 0.55rem 0.9rem;
+      font: inherit;
+      font-size: 0.92rem;
+      font-weight: 500;
+      color: #cbd5e1;
+      background: #0f1a2b;
+      border: 1px solid #334155;
+      border-radius: 0.6rem;
+      cursor: pointer;
+      touch-action: manipulation;
+      line-height: 1.3;
+    }
+
+    .btn-response:active {
+      background: #1b2a40;
+    }
+
+    .btn-response[aria-pressed="true"] {
+      background: #1e3a5f;
+      border-color: #3b82f6;
+      color: #dbeafe;
+      font-weight: 600;
+    }
+
+    /* Explore: transition between the guided step and the card grid.
+       Heading + supporting copy swap based on whether a response is active. */
+    .grid-section {
+      margin: 0;
+    }
+
+    .grid-intro-heading {
+      margin: 0 0 0.35rem;
+      font-size: 1.15rem;
+      font-weight: 650;
+      letter-spacing: -0.01em;
+      color: #f1f5f9;
+    }
+
+    .grid-intro-lede {
+      margin: 0 0 1.1rem;
+      color: #94a3b8;
+      font-size: 0.92rem;
+      max-width: 42rem;
+      line-height: 1.4;
     }
 
     /* Explore: card grid */
@@ -146,9 +320,34 @@
       transition: border-color 0.15s ease, box-shadow 0.15s ease;
     }
 
+    /* Recommended is a softer accent so Selected (blue + glow) stays visually stronger. */
+    .cap-card.is-recommended {
+      border-color: #14b8a6;
+      background: #182433;
+    }
+
     .cap-card.is-selected {
       border-color: #3b82f6;
       box-shadow: 0 0 0 1px #3b82f680;
+    }
+
+    .cap-card.is-selected.is-recommended {
+      border-color: #3b82f6;
+    }
+
+    .cap-recommend-label {
+      align-self: flex-start;
+      display: inline-flex;
+      align-items: center;
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #5eead4;
+      background: #042f2e;
+      padding: 0.2rem 0.5rem;
+      border-radius: 0.35rem;
+      border: 1px solid #134e4a;
     }
 
     .cap-card h2 {
@@ -173,10 +372,17 @@
 
     .cap-card-footer .hint {
       font-size: 0.8rem;
-      color: #64748b;
+      color: #94a3b8;
     }
 
     /* Focus map */
+    .focus-list-lede {
+      margin: 0 0 0.9rem;
+      color: #94a3b8;
+      font-size: 0.88rem;
+      line-height: 1.4;
+    }
+
     .focus-list {
       list-style: none;
       margin: 0;
@@ -247,46 +453,29 @@
       margin-bottom: 0.5rem;
     }
 
-    /* Session ID: subtle on explore, clearer on focus map */
-    .session-hint {
-      margin: -0.5rem 0 1.25rem;
+    /* Kiosk identifier — kept visible per spec, but demoted now that the
+       stateless QR no longer depends on it. Same muted treatment on both views. */
+    .session-hint,
+    .focus-session-panel {
+      margin: 0 0 1.15rem;
+      padding: 0;
+      background: transparent;
+      border: none;
       font-size: 0.8rem;
-      color: #64748b;
+      color: #94a3b8;
       letter-spacing: 0.02em;
     }
 
-    .session-hint strong {
-      color: #94a3b8;
+    .session-hint strong,
+    .focus-session-panel .session-id-value {
+      color: #cbd5e1;
       font-weight: 600;
       font-variant-numeric: tabular-nums;
     }
 
-    .focus-session-panel {
-      margin-bottom: 1.15rem;
-      padding: 0.65rem 1rem;
-      background: #1e293b;
-      border: 1px solid #334155;
-      border-radius: 0.65rem;
-      font-size: 0.95rem;
-      color: #cbd5e1;
-    }
-
     .focus-session-panel .session-label {
-      display: block;
-      font-size: 0.72rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #64748b;
-      margin-bottom: 0.25rem;
-    }
-
-    .focus-session-panel .session-id-value {
-      font-size: 1.25rem;
-      font-weight: 700;
-      font-variant-numeric: tabular-nums;
-      letter-spacing: 0.04em;
-      color: #f1f5f9;
+      font-weight: 600;
+      color: #94a3b8;
     }
 
     /* Continue later + QR (Focus map) */
@@ -319,14 +508,34 @@
 
     .focus-qr-mount img {
       display: block;
-      width: 200px;
-      height: 200px;
+      width: 256px;
+      height: 256px;
+    }
+
+    .qr-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-top: 0.75rem;
+    }
+
+    .btn-copy {
+      min-height: 2.25rem;
+      padding: 0 0.85rem;
+      font-size: 0.85rem;
+    }
+
+    .btn-copy.is-success {
+      background: #052e1a;
+      border-color: #10b981;
+      color: #6ee7b7;
     }
 
     .qr-url-muted {
-      margin: 0.85rem 0 0;
-      font-size: 0.75rem;
-      color: #64748b;
+      margin: 0.55rem 0 0;
+      font-size: 0.78rem;
+      color: #94a3b8;
       word-break: break-all;
       max-width: 100%;
       font-variant-numeric: tabular-nums;
@@ -362,6 +571,38 @@
       white-space: pre-wrap;
       word-break: break-word;
     }
+
+    /* Toast: transient feedback for selection changes / clear action. */
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 1.5rem;
+      transform: translate(-50%, 0.5rem);
+      max-width: calc(100vw - 2rem);
+      padding: 0.7rem 1.05rem;
+      background: #1e293b;
+      color: #e8ecf1;
+      border: 1px solid #334155;
+      border-radius: 0.65rem;
+      font-size: 0.9rem;
+      line-height: 1.3;
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.18s ease, transform 0.18s ease;
+      z-index: 20;
+    }
+
+    .toast.is-visible {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .toast {
+        transition: opacity 0.01s linear;
+      }
+    }
   </style>
 </head>
 <body>
@@ -369,16 +610,32 @@
   <div id="view-explore" class="view is-active" aria-hidden="false">
     <header class="app-header">
       <h1>Explore capabilities</h1>
-      <button type="button" class="btn btn-primary" id="btn-to-focus">
-        View focus map
-      </button>
+      <div class="header-actions">
+        <button type="button" class="btn btn-ghost btn-clear" id="btn-clear-selections" hidden>
+          Clear selections
+        </button>
+        <button type="button" class="btn btn-primary" id="btn-to-focus">
+          View focus map
+        </button>
+      </div>
     </header>
     <p class="spike-disclaimer" role="note">Technical feasibility spike — not production software.</p>
-    <p style="margin: 0 0 1.25rem; color: #94a3b8; max-width: 40rem">
-      Tap a star to select. Order matters: your first picks become primary when you open the focus map.
-    </p>
     <p class="session-hint" id="explore-session-display" aria-label="Kiosk session identifier"></p>
-    <div id="explore-card-host" class="card-grid" role="list"></div>
+    <section class="guided-entry" aria-labelledby="guided-entry-heading">
+      <span class="guided-entry-step-label">Start here</span>
+      <h2 class="guided-entry-heading" id="guided-entry-heading">
+        Where do you see the most immediate opportunity for AI in your organization?
+      </h2>
+      <p class="guided-entry-helper" id="guided-entry-helper" hidden>
+        Based on your priority, we’ve highlighted capabilities that may help achieve that outcome. You can refine your selections at any time.
+      </p>
+      <div id="guided-entry-host" class="guided-entry-buttons" role="group" aria-label="Opportunity area"></div>
+    </section>
+    <section class="grid-section" aria-labelledby="grid-intro-heading">
+      <h2 class="grid-intro-heading" id="grid-intro-heading">Explore capabilities</h2>
+      <p class="grid-intro-lede" id="grid-intro-lede">Answer the question above to highlight a recommended starting point, or select capabilities manually.</p>
+      <div id="explore-card-host" class="card-grid" role="list"></div>
+    </section>
   </div>
 
   <!-- Focus map: summary of selections with primary / supporting labels -->
@@ -396,6 +653,9 @@
       <h2 class="continue-later-heading" id="continue-later-heading">Continue later</h2>
       <p class="continue-later-lede">Scan to open this focus map outside the kiosk — selections travel in the URL itself.</p>
       <div id="focus-qr-mount" class="focus-qr-mount" role="img" aria-label="QR code for stateless focus URL"></div>
+      <div class="qr-actions">
+        <button type="button" id="btn-copy-url" class="btn btn-ghost btn-copy" aria-live="polite">Copy URL</button>
+      </div>
       <p id="focus-qr-url-text" class="qr-url-muted"></p>
     </section>
     <section class="handoff-dev" id="focus-handoff-section" aria-labelledby="handoff-dev-heading">
@@ -406,6 +666,9 @@
       <pre id="focus-handoff-pre" class="handoff-pre" aria-label="Stateless URL parameter preview"></pre>
     </section>
   </div>
+
+  <!-- Toast: transient confirmation for selection / clear actions. -->
+  <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
   <!-- qrcodejs 1.0.0 inlined for offline / file:// (MIT, davidshimjs/qrcodejs). -->
   <script>
@@ -476,13 +739,15 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
         return;
       }
       clearQrMount(containerEl);
+      // Pure-black modules + level Q error correction give noticeably more
+      // forgiving scans from typical kiosk-to-phone distances and lighting.
       new QRCode(containerEl, {
         text: payloadText,
-        width: 200,
-        height: 200,
-        colorDark: "#0f1419",
+        width: 256,
+        height: 256,
+        colorDark: "#000000",
         colorLight: "#ffffff",
-        correctLevel: QRCode.CorrectLevel.M
+        correctLevel: QRCode.CorrectLevel.Q
       });
     }
 
@@ -500,6 +765,143 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
     }
 
     /* -------------------------------------------------------------------------- */
+    /* Clipboard helper for the "Copy URL" affordance under the QR.              */
+    /* Uses the async Clipboard API when available, falls back to execCommand    */
+    /* for older browsers and some file:// contexts.                             */
+    /* -------------------------------------------------------------------------- */
+
+    function legacyCopyToClipboard(text) {
+      try {
+        var ta = document.createElement("textarea");
+        ta.value = text;
+        ta.setAttribute("readonly", "");
+        ta.style.position = "absolute";
+        ta.style.left = "-9999px";
+        document.body.appendChild(ta);
+        ta.select();
+        var ok = document.execCommand("copy");
+        document.body.removeChild(ta);
+        return ok;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    var COPY_FEEDBACK_MS = 1500;
+    var copyFeedbackTimer = null;
+
+    function showCopyFeedback(btn, message, success) {
+      if (!btn.dataset.defaultLabel) {
+        btn.dataset.defaultLabel = btn.textContent;
+      }
+      btn.textContent = message;
+      if (success) {
+        btn.classList.add("is-success");
+      } else {
+        btn.classList.remove("is-success");
+      }
+      if (copyFeedbackTimer) {
+        clearTimeout(copyFeedbackTimer);
+      }
+      copyFeedbackTimer = setTimeout(function () {
+        btn.textContent = btn.dataset.defaultLabel;
+        btn.classList.remove("is-success");
+      }, COPY_FEEDBACK_MS);
+    }
+
+    function copyStatelessUrlToClipboard() {
+      var btn = document.getElementById("btn-copy-url");
+      if (!btn) return;
+      var url = buildStatelessFocusUrl();
+      function done(ok) {
+        showCopyFeedback(btn, ok ? "Copied" : "Copy failed — select URL below", ok);
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(
+          function () { done(true); },
+          function () { done(legacyCopyToClipboard(url)); }
+        );
+      } else {
+        done(legacyCopyToClipboard(url));
+      }
+    }
+
+    /* -------------------------------------------------------------------------- */
+    /* Toast: small bottom-center confirmation for selection changes / clear.    */
+    /* Queue ensures rapid taps don't trample each other; auto-dismisses.        */
+    /* -------------------------------------------------------------------------- */
+
+    var TOAST_VISIBLE_MS = 1800;
+    var TOAST_FADE_MS = 200;
+    var toastQueue = [];
+    var toastShowing = false;
+
+    function showToast(message) {
+      toastQueue.push(message);
+      processToastQueue();
+    }
+
+    function processToastQueue() {
+      if (toastShowing || toastQueue.length === 0) return;
+      var el = document.getElementById("toast");
+      if (!el) return;
+      toastShowing = true;
+      el.textContent = toastQueue.shift();
+      el.classList.add("is-visible");
+      setTimeout(function () {
+        el.classList.remove("is-visible");
+        setTimeout(function () {
+          toastShowing = false;
+          processToastQueue();
+        }, TOAST_FADE_MS);
+      }, TOAST_VISIBLE_MS);
+    }
+
+    /* -------------------------------------------------------------------------- */
+    /* Clear selections: two-tap confirm pattern (no modal, no library).         */
+    /* First tap arms the button; second tap within the window clears everything.*/
+    /* -------------------------------------------------------------------------- */
+
+    var CLEAR_ARM_MS = 2000;
+    var clearArmed = false;
+    var clearArmTimer = null;
+
+    function resetClearArmState() {
+      var btn = document.getElementById("btn-clear-selections");
+      clearArmed = false;
+      if (clearArmTimer) {
+        clearTimeout(clearArmTimer);
+        clearArmTimer = null;
+      }
+      if (btn) {
+        btn.textContent = "Clear selections";
+        btn.classList.remove("is-armed");
+      }
+    }
+
+    function handleClearSelectionsClick() {
+      var btn = document.getElementById("btn-clear-selections");
+      if (!btn || selectedCapabilities.length === 0) return;
+      if (!clearArmed) {
+        clearArmed = true;
+        btn.textContent = "Tap again to confirm";
+        btn.classList.add("is-armed");
+        clearArmTimer = setTimeout(resetClearArmState, CLEAR_ARM_MS);
+        return;
+      }
+      var n = selectedCapabilities.length;
+      selectedCapabilities = [];
+      resetClearArmState();
+      renderExploreView();
+      refreshStatelessParameterPreview();
+      refreshFocusQrDisplay();
+      if (document.getElementById("view-focus").classList.contains("is-active")) {
+        renderFocusMapView();
+      }
+      showToast("Cleared " + n + (n === 1 ? " selection" : " selections"));
+    }
+
+    /* -------------------------------------------------------------------------- */
     /* Rendering logic                                                            */
     /* -------------------------------------------------------------------------- */
 
@@ -508,6 +910,47 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
      * First selected = first in array; used for Primary vs Supporting labels.
      */
     var selectedCapabilities = [];
+
+    /* -------------------------------------------------------------------------- */
+    /* Guided entry question (Explore)                                            */
+    /* Advisory only: highlights mapped cards but never auto-selects.             */
+    /* Response is NOT encoded in the stateless URL or Focus map.                 */
+    /* -------------------------------------------------------------------------- */
+
+    var QUESTION_RESPONSES = [
+      { id: "efficiency", label: "Improve efficiency of internal operations" },
+      { id: "customer",   label: "Enhance customer interactions and service" },
+      { id: "insights",   label: "Strengthen decision-making and insights" },
+      { id: "risk",       label: "Reduce risk and improve compliance" }
+    ];
+
+    /**
+     * Maps each response id to capability ids in the aiRMF-inspired catalog.
+     * Highlighting is purely advisory — only manually starred capabilities end
+     * up in selectedCapabilities (and therefore the Focus map and the
+     * stateless QR URL). Recommended-but-unstarred items are never encoded.
+     */
+    var QUESTION_TO_CAPABILITIES = {
+      efficiency: ["operational-efficiency", "content-processing", "workflow-intelligence"],
+      customer:   ["customer-support", "content-processing", "knowledge-discovery"],
+      insights:   ["decision-support", "knowledge-discovery", "workflow-intelligence"],
+      risk:       ["risk-monitoring", "governance-support", "workflow-intelligence"]
+    };
+
+    var selectedQuestionResponse = null;
+
+    /** Toggle behavior: re-clicking the active response clears it. */
+    function selectQuestionResponse(responseId) {
+      selectedQuestionResponse =
+        selectedQuestionResponse === responseId ? null : responseId;
+      renderExploreView();
+    }
+
+    function isCapabilityRecommended(capabilityId) {
+      if (!selectedQuestionResponse) return false;
+      var mapped = QUESTION_TO_CAPABILITIES[selectedQuestionResponse] || [];
+      return mapped.indexOf(capabilityId) !== -1;
+    }
 
     /* -------------------------------------------------------------------------- */
     /* Stateless parameter preview (mirrors what the QR encodes)                  */
@@ -545,20 +988,26 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
       var exploreEl = document.getElementById("explore-session-display");
       var focusEl = document.getElementById("focus-session-display");
       exploreEl.innerHTML = "Session <strong>" + sessionId + "</strong> · unchanged while this page is open";
+      // Focus is now a single muted line — the stateless QR doesn't depend on
+      // the kiosk id, so the giant panel was visually overstating its role.
       focusEl.innerHTML =
-        '<span class="session-label">Session</span><span class="session-id-value">' + sessionId + "</span>";
+        '<span class="session-label">Kiosk demo</span> · ' +
+        '<span class="session-id-value">' + sessionId + "</span>";
     }
 
-    /** Static catalog for the spike (6–8 items). */
+    /**
+     * Static catalog for the spike — strategic, aiRMF-inspired groupings.
+     * Names are illustrative for this demo, not an official aiRMF taxonomy.
+     */
     var CAPABILITIES = [
-      { id: "summarize", title: "Summarize long content", description: "Turn documents or threads into short briefs with key points and actions." },
-      { id: "draft", title: "Draft customer replies", description: "Generate on-brand email or chat responses from notes or bullet points." },
-      { id: "classify", title: "Classify and route requests", description: "Label incoming items by intent, urgency, or team for faster triage." },
-      { id: "extract", title: "Extract structured fields", description: "Pull names, dates, amounts, or IDs from unstructured text into a table." },
-      { id: "compare", title: "Compare options", description: "Side-by-side pros, cons, and risks for policies, plans, or product choices." },
-      { id: "coach", title: "Real-time agent coaching", description: "Suggest next-best questions, compliance phrases, or empathy cues during live chats." },
-      { id: "search", title: "Semantic knowledge search", description: "Answer from internal docs with citations instead of keyword-only search." },
-      { id: "monitor", title: "Monitor for anomalies", description: "Flag unusual patterns in logs, transactions, or operational metrics." }
+      { id: "operational-efficiency", title: "Operational Efficiency & Automation", description: "Reduce repetitive manual work and streamline common internal processes." },
+      { id: "content-processing",     title: "Content Processing & Summarization", description: "Turn long, complex, or unstructured information into concise, usable summaries." },
+      { id: "workflow-intelligence",  title: "Process Routing & Workflow Intelligence", description: "Classify, route, and prioritize requests so work reaches the right people faster." },
+      { id: "customer-support",       title: "Customer Interaction Support", description: "Support faster, clearer, and more consistent responses during service interactions." },
+      { id: "decision-support",       title: "Decision Support & Insight Generation", description: "Compare options, surface patterns, and support better-informed decisions." },
+      { id: "knowledge-discovery",    title: "Knowledge Discovery & Search", description: "Help users find relevant information across policies, documents, and knowledge sources." },
+      { id: "risk-monitoring",        title: "Risk Monitoring & Compliance Oversight", description: "Identify anomalies, policy concerns, or compliance risks earlier in a workflow." },
+      { id: "governance-support",     title: "Governance & Control Support", description: "Support oversight, traceability, and consistent application of organizational guidance." }
     ];
 
     function capabilityById(id) {
@@ -574,13 +1023,22 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
 
     /**
      * Toggle selection: append on select, remove on deselect; order preserved for primary logic.
+     * Emits a toast so users with the header scrolled out of view still get
+     * confirmation of what changed.
      */
     function toggleSelection(capabilityId) {
+      var cap = capabilityById(capabilityId);
       var idx = selectedCapabilities.indexOf(capabilityId);
       if (idx === -1) {
         selectedCapabilities.push(capabilityId);
+        if (cap) {
+          var newOrder = selectedCapabilities.length;
+          var roleLabel = newOrder <= 2 ? "primary" : "supporting";
+          showToast("Added: " + cap.title + " (#" + newOrder + ", " + roleLabel + ")");
+        }
       } else {
         selectedCapabilities.splice(idx, 1);
+        if (cap) showToast("Removed: " + cap.title);
       }
       renderExploreView();
       refreshStatelessParameterPreview();
@@ -609,15 +1067,97 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
       }
     }
 
+    /**
+     * Reflects current selection count on the header CTAs:
+     *  - "View focus map" gets a live count and is disabled when 0 selected.
+     *  - "Clear selections" is hidden when 0, visible otherwise; any change
+     *    to the count also defuses an armed clear so stale confirmations
+     *    can't fire against new selections.
+     */
+    function updateFocusButtonState() {
+      var focusBtn = document.getElementById("btn-to-focus");
+      var clearBtn = document.getElementById("btn-clear-selections");
+      var n = selectedCapabilities.length;
+      if (focusBtn) {
+        focusBtn.textContent = n > 0 ? "View focus map (" + n + ")" : "View focus map";
+        focusBtn.disabled = n === 0;
+        focusBtn.setAttribute("aria-disabled", n === 0 ? "true" : "false");
+        focusBtn.title = n === 0 ? "Star at least one capability to view the focus map." : "";
+      }
+      if (clearBtn) {
+        clearBtn.hidden = n === 0;
+        if (clearArmed) resetClearArmState();
+      }
+    }
+
+    /**
+     * Swaps the heading + lede above the card grid so the section's purpose
+     * matches the current state: refining recommendations after a response,
+     * or a neutral "explore everything" prompt when nothing is picked yet.
+     */
+    function renderGridIntro() {
+      var headingEl = document.getElementById("grid-intro-heading");
+      var ledeEl = document.getElementById("grid-intro-lede");
+      if (!headingEl || !ledeEl) return;
+      if (selectedQuestionResponse) {
+        headingEl.textContent = "Recommended capabilities";
+        ledeEl.textContent =
+          "Based on your answer. You can add or remove selections at any time.";
+      } else {
+        headingEl.textContent = "Explore capabilities";
+        ledeEl.textContent =
+          "Answer the question above to highlight a recommended starting point, or select capabilities manually.";
+      }
+    }
+
+    function renderGuidedEntry() {
+      var host = document.getElementById("guided-entry-host");
+      if (!host) return;
+      var helper = document.getElementById("guided-entry-helper");
+      if (helper) helper.hidden = !selectedQuestionResponse;
+      host.innerHTML = "";
+      for (var i = 0; i < QUESTION_RESPONSES.length; i++) {
+        var response = QUESTION_RESPONSES[i];
+        var active = selectedQuestionResponse === response.id;
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "btn-response";
+        btn.setAttribute("aria-pressed", active ? "true" : "false");
+        btn.textContent = response.label;
+        btn.addEventListener("click", function (id) {
+          return function () {
+            selectQuestionResponse(id);
+          };
+        }(response.id));
+        host.appendChild(btn);
+      }
+    }
+
     function renderExploreView() {
+      renderGuidedEntry();
+      renderGridIntro();
+      updateFocusButtonState();
       var host = document.getElementById("explore-card-host");
       host.innerHTML = "";
       for (var i = 0; i < CAPABILITIES.length; i++) {
         var cap = CAPABILITIES[i];
         var selected = isSelected(cap.id);
+        var recommended = isCapabilityRecommended(cap.id);
+        var order = selected ? selectedCapabilities.indexOf(cap.id) + 1 : 0;
+        var isPrimaryPick = selected && order <= 2;
         var card = document.createElement("article");
-        card.className = "cap-card" + (selected ? " is-selected" : "");
+        card.className =
+          "cap-card" +
+          (selected ? " is-selected" : "") +
+          (recommended ? " is-recommended" : "");
         card.setAttribute("role", "listitem");
+
+        if (recommended) {
+          var recLabel = document.createElement("span");
+          recLabel.className = "cap-recommend-label";
+          recLabel.textContent = "Recommended";
+          card.appendChild(recLabel);
+        }
 
         var h2 = document.createElement("h2");
         h2.textContent = cap.title;
@@ -632,15 +1172,30 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
 
         var hint = document.createElement("span");
         hint.className = "hint";
-        hint.textContent = selected ? "Selected" : "Not selected";
+        hint.textContent = selected
+          ? (isPrimaryPick ? "Selected · Primary " : "Selected · Supporting ") + order
+          : "Not selected";
         footer.appendChild(hint);
 
         var star = document.createElement("button");
         star.type = "button";
         star.className = "btn btn-star";
-        star.setAttribute("aria-label", (selected ? "Remove " : "Select ") + cap.title);
+        star.setAttribute(
+          "aria-label",
+          selected
+            ? "Remove " + cap.title + ", currently selection " + order + " of " + selectedCapabilities.length
+            : "Select " + cap.title
+        );
         star.setAttribute("aria-pressed", selected ? "true" : "false");
         star.textContent = "★";
+        if (selected) {
+          var orderBadge = document.createElement("span");
+          orderBadge.className =
+            "star-order-badge " + (isPrimaryPick ? "is-primary" : "is-supporting");
+          orderBadge.textContent = String(order);
+          orderBadge.setAttribute("aria-hidden", "true");
+          star.appendChild(orderBadge);
+        }
         star.addEventListener("click", function (id) {
           return function () {
             toggleSelection(id);
@@ -666,6 +1221,11 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
           "Your first two selections will show as Primary on this map.";
         host.appendChild(empty);
       } else {
+        var lede = document.createElement("p");
+        lede.className = "focus-list-lede";
+        lede.textContent = "Your focus areas based on your guided priorities";
+        host.appendChild(lede);
+
         var ul = document.createElement("ul");
         ul.className = "focus-list";
 
@@ -701,12 +1261,17 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
     }
 
     document.getElementById("btn-to-focus").addEventListener("click", function () {
+      if (selectedCapabilities.length === 0) return;
       showView("focus");
     });
 
     document.getElementById("btn-back-explore").addEventListener("click", function () {
       showView("explore");
     });
+
+    document.getElementById("btn-copy-url").addEventListener("click", copyStatelessUrlToClipboard);
+
+    document.getElementById("btn-clear-selections").addEventListener("click", handleClearSelectionsClick);
 
     updateSessionIdDisplays();
     refreshFocusQrDisplay();
