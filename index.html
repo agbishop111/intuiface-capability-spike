@@ -394,17 +394,16 @@
     <div id="focus-content-host"></div>
     <section class="continue-later" id="focus-continue-section" aria-labelledby="continue-later-heading">
       <h2 class="continue-later-heading" id="continue-later-heading">Continue later</h2>
-      <p class="continue-later-lede">Scan to access this session outside the kiosk.</p>
-      <div id="focus-qr-mount" class="focus-qr-mount" role="img" aria-label="QR code for session takeaway URL"></div>
+      <p class="continue-later-lede">Scan to open this focus map outside the kiosk — selections travel in the URL itself.</p>
+      <div id="focus-qr-mount" class="focus-qr-mount" role="img" aria-label="QR code for stateless focus URL"></div>
       <p id="focus-qr-url-text" class="qr-url-muted"></p>
     </section>
     <section class="handoff-dev" id="focus-handoff-section" aria-labelledby="handoff-dev-heading">
-      <h2 class="continue-later-heading" id="handoff-dev-heading">Developer handoff preview</h2>
+      <h2 class="continue-later-heading" id="handoff-dev-heading">Stateless parameter preview</h2>
       <p class="handoff-dev-explainer">
-        Pretty-printed JSON below simulates the structured payload a future backend or API could receive
-        when a session is registered or updated. This spike does not transmit data; it only builds the object in memory.
+        This QR encodes the selected capabilities directly in the URL. No session lookup or backend persistence is required for this variant.
       </p>
-      <pre id="focus-handoff-pre" class="handoff-pre" aria-label="Handoff payload JSON"></pre>
+      <pre id="focus-handoff-pre" class="handoff-pre" aria-label="Stateless URL parameter preview"></pre>
     </section>
   </div>
 
@@ -432,19 +431,33 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
     /** Set once at load; same value for the full page lifetime (no localStorage). */
     var sessionId = generateSessionId();
 
-    /** ISO-8601 timestamp for when this kiosk session started (with sessionId). */
-    var sessionCreatedAt = new Date().toISOString();
-
     /* -------------------------------------------------------------------------- */
     /* QR logic                                                                   */
     /* Adapter only — qrcodejs is inlined in the preceding <script> (no CDN).    */
     /* -------------------------------------------------------------------------- */
 
+    var STATELESS_FOCUS_BASE_URL = "https://example.invalid/focus";
+
     /**
-     * Full URL encoded into the QR code. Placeholder host for spike / future infra.
+     * Stateless handoff URL: selections are encoded directly as query params.
+     * First two selectedCapabilities → primary, the rest → supporting.
+     * No sessionId, no backend lookup; the URL alone reconstructs the focus map.
+     * Returns the bare base URL when there are no selections.
      */
-    function getSessionTakeawayUrl() {
-      return "https://example.invalid/session?sessionId=" + encodeURIComponent(sessionId);
+    function buildStatelessFocusUrl() {
+      if (selectedCapabilities.length === 0) {
+        return STATELESS_FOCUS_BASE_URL;
+      }
+      var primary = selectedCapabilities.slice(0, 2);
+      var supporting = selectedCapabilities.slice(2);
+      var params = [];
+      if (primary.length > 0) {
+        params.push("primary=" + primary.map(encodeURIComponent).join(","));
+      }
+      if (supporting.length > 0) {
+        params.push("supporting=" + supporting.map(encodeURIComponent).join(","));
+      }
+      return STATELESS_FOCUS_BASE_URL + "?" + params.join("&");
     }
 
     function clearQrMount(containerEl) {
@@ -455,7 +468,7 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
 
     /**
      * Draws a QR for payloadText into containerEl using the global QRCode (qrcodejs).
-     * Returns nothing; safe to call whenever sessionId-derived URL changes.
+     * Returns nothing; safe to call whenever the stateless URL changes.
      */
     function mountQrCodeWithLibrary(containerEl, payloadText) {
       if (typeof QRCode === "undefined") {
@@ -473,9 +486,9 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
       });
     }
 
-    /** Syncs muted URL text + QR image to the current sessionId. */
-    function refreshSessionQrDisplay() {
-      var url = getSessionTakeawayUrl();
+    /** Syncs muted URL text + QR image to the current stateless focus URL. */
+    function refreshFocusQrDisplay() {
+      var url = buildStatelessFocusUrl();
       var urlEl = document.getElementById("focus-qr-url-text");
       var mountEl = document.getElementById("focus-qr-mount");
       if (urlEl) {
@@ -497,33 +510,35 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
     var selectedCapabilities = [];
 
     /* -------------------------------------------------------------------------- */
-    /* Handoff payload (structured data for future API / persistence)             */
+    /* Stateless parameter preview (mirrors what the QR encodes)                  */
     /* -------------------------------------------------------------------------- */
 
     /**
-     * Versioned snapshot for a future handoff: session, URL, and capability picks.
-     * primarySelections / supportingSelections mirror Focus map (first two vs rest).
+     * Returns the raw, unencoded primary/supporting capability lists plus the
+     * fully encoded stateless URL — exactly the three things a developer
+     * inspecting the QR payload needs to verify.
      */
-    function buildHandoffPayload() {
+    function buildStatelessPreview() {
+      var primary = selectedCapabilities.slice(0, 2);
+      var supporting = selectedCapabilities.slice(2);
       return {
-        schemaVersion: 1,
-        sessionId: sessionId,
-        createdAt: sessionCreatedAt,
-        takeawayUrl: getSessionTakeawayUrl(),
-        selectedCapabilities: selectedCapabilities.slice(),
-        primarySelections: selectedCapabilities.slice(0, 2),
-        supportingSelections: selectedCapabilities.slice(2),
-        handoffStatus: "in-kiosk-demo-only"
+        primary: primary.join(","),
+        supporting: supporting.join(","),
+        url: buildStatelessFocusUrl()
       };
     }
 
-    /** Updates the Focus map JSON preview (pre#focus-handoff-pre) from buildHandoffPayload(); no network. */
-    function refreshHandoffDeveloperPreview() {
+    /** Updates the Focus map stateless preview (pre#focus-handoff-pre); no network. */
+    function refreshStatelessParameterPreview() {
       var pre = document.getElementById("focus-handoff-pre");
       if (!pre) {
         return;
       }
-      pre.textContent = JSON.stringify(buildHandoffPayload(), null, 2);
+      var preview = buildStatelessPreview();
+      pre.textContent =
+        "primary=" + preview.primary + "\n" +
+        "supporting=" + preview.supporting + "\n" +
+        "url=" + preview.url;
     }
 
     function updateSessionIdDisplays() {
@@ -568,7 +583,8 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
         selectedCapabilities.splice(idx, 1);
       }
       renderExploreView();
-      refreshHandoffDeveloperPreview();
+      refreshStatelessParameterPreview();
+      refreshFocusQrDisplay();
       if (document.getElementById("view-focus").classList.contains("is-active")) {
         renderFocusMapView();
       }
@@ -680,11 +696,11 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
         host.appendChild(ul);
       }
 
-      refreshHandoffDeveloperPreview();
+      refreshStatelessParameterPreview();
+      refreshFocusQrDisplay();
     }
 
     document.getElementById("btn-to-focus").addEventListener("click", function () {
-      console.log("[handoff-payload]", buildHandoffPayload());
       showView("focus");
     });
 
@@ -693,9 +709,9 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
     });
 
     updateSessionIdDisplays();
-    refreshSessionQrDisplay();
+    refreshFocusQrDisplay();
     renderExploreView();
-    refreshHandoffDeveloperPreview();
+    refreshStatelessParameterPreview();
   </script>
 </body>
 </html>
