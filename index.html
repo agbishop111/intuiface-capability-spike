@@ -12,8 +12,13 @@
       box-sizing: border-box;
     }
 
+    /* Kiosk base: 22px lets a 3840×2160 display present comfortable touch
+       targets (60–80px tall buttons) and readable body text without further
+       scaling. Smaller dev viewports still render — they just look bigger
+       per visible character, which is the right tradeoff for a kiosk-first
+       prototype. */
     html {
-      font-size: 18px;
+      font-size: 22px;
       -webkit-tap-highlight-color: transparent;
     }
 
@@ -24,48 +29,63 @@
       background: #0f1419;
       color: #e8ecf1;
       line-height: 1.45;
+      /* Permissive page-level scroll as a POC fallback: on the 3840×2160
+         kiosk target nothing overflows, so no scrollbars appear. On smaller
+         dev/demo viewports content gracefully scrolls instead of clipping. */
+      overflow: auto;
     }
 
-    /* Views: show/hide via .is-hidden (no routing) */
+    /* Each view is a full-screen flex column: header (top), body (flex: 1),
+       optional footer (bottom). On the kiosk it fits one screen exactly;
+       on smaller viewports it overflows and the view itself scrolls so the
+       header/footer stay attached to their respective ends of the content. */
     .view {
       display: none;
-      min-height: 100vh;
-      padding: 1.25rem 1.25rem 2rem;
-      max-width: 56rem;
-      margin: 0 auto;
+      flex-direction: column;
+      width: 100vw;
+      height: 100vh;
+      margin: 0;
+      padding: 0;
+      max-width: none;
+      overflow: auto;
     }
 
     .view.is-active {
-      display: block;
+      display: flex;
     }
 
+    /* App header: title row + optional inline meta. No longer sticky —
+       the parent view is a fixed-height flex column so the header is a
+       natural top child. */
     header.app-header {
-      position: sticky;
-      top: 0;
-      z-index: 5;
+      flex-shrink: 0;
       display: flex;
-      flex-wrap: wrap;
-      align-items: center;
+      align-items: flex-end;
       justify-content: space-between;
-      gap: 0.75rem;
-      /* Negative side/top margins push the bar to the view edges so the
-         backdrop fills the whole sticky bar, not just the padded center. */
-      margin: -1.25rem -1.25rem 1.25rem;
-      padding: 1.25rem 1.25rem 1rem;
+      gap: 1rem;
+      padding: 1.4rem 2rem 1.1rem;
       background: rgba(15, 20, 25, 0.92);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
       border-bottom: 1px solid #2a3441;
     }
 
     header.app-header h1 {
       margin: 0;
-      font-size: 1.35rem;
-      font-weight: 650;
+      font-size: 1.85rem;
+      font-weight: 700;
       letter-spacing: -0.02em;
+      line-height: 1.15;
     }
 
-    /* Right-side cluster: holds count CTA + optional Clear selections. */
+    /* Title + subtitle pair used inside the app header. */
+    .app-header-titles {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+
+    /* Right-side header cluster — retained for any in-header status pills
+       (e.g., the small session id chip). Action buttons live in the
+       per-view footer for thumb-reachability on a tall touchscreen. */
     .header-actions {
       display: flex;
       align-items: center;
@@ -74,10 +94,81 @@
       justify-content: flex-end;
     }
 
+    /* Kept in the DOM only so JS getElementById()/addEventListener()
+       wiring against the original header-twin button ids does not throw.
+       The visible, interactive instances live in the view footer. */
+    .header-actions--hidden {
+      display: none;
+    }
+
+    /* Kiosk layout primitives ----------------------------------------------
+       The view body fills the available vertical space between header and
+       footer. Per-view body classes (.home-body, .intro-body, .explore-body,
+       .focus-body) add layout-specific column structure on top of this. */
+    .view-body {
+      flex: 1 1 auto;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 1.1rem;
+      padding: 1.4rem 2rem;
+      /* Pinned header/footer + scrollable middle: on the 3840×2160 kiosk
+         the body fits exactly so no scrollbar appears; on smaller demo
+         viewports content scrolls within the body region so header and
+         footer stay where the visitor expects them. */
+      overflow: auto;
+    }
+
+    /* Per-view footer: bottom action bar reachable from a seated/standing
+       position on a large display. Hosts the primary CTA + secondary nav.
+       Replaces the previous header-action cluster as the canonical action
+       surface. */
+    .view-footer {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 1rem 2rem 1.2rem;
+      background: rgba(10, 14, 22, 0.92);
+      border-top: 1px solid #1e293b;
+    }
+
+    .view-footer-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      flex-wrap: wrap;
+    }
+
+    /* Footer status line (live selection count on Capability Map). */
+    .view-footer .view-footer-status {
+      color: #cbd5e1;
+      font-size: 1rem;
+      font-weight: 500;
+    }
+
+    /* Header-mounted right-side meta chip (e.g. session id on map / focus). */
+    .header-meta {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.78rem;
+      color: #94a3b8;
+      letter-spacing: 0.03em;
+    }
+
+    /* Reusable larger button modifier for primary kiosk CTAs. */
+    .btn-large {
+      min-height: 3.25rem;
+      padding: 0 1.6rem;
+      font-size: 1.05rem;
+    }
+
     .btn-clear {
-      min-height: 2.25rem;
-      padding: 0 0.85rem;
-      font-size: 0.85rem;
+      min-height: 2.5rem;
+      padding: 0 1rem;
+      font-size: 0.9rem;
     }
 
     .btn-clear.is-armed {
@@ -86,16 +177,33 @@
       color: #fbbf24;
     }
 
-    /* Persistent spike context (both views) */
+    /* Persistent prototype disclaimer — one element, fixed bottom-right of
+       the screen, deliberately small so it stays visible without competing
+       with page content. Replaces the per-view duplicates that previously
+       reserved vertical space on every screen. */
     .spike-disclaimer {
-      margin: -0.35rem 0 0.75rem;
-      padding: 0;
-      max-width: 36rem;
-      font-size: 0.7rem;
+      position: fixed;
+      right: 0.7rem;
+      bottom: 0.45rem;
+      margin: 0;
+      padding: 0.15rem 0.45rem;
+      font-size: 0.6rem;
       font-weight: 400;
-      line-height: 1.3;
+      line-height: 1.2;
+      color: #475569;
+      letter-spacing: 0.05em;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Page subtitle: optional secondary title under a view's h1, sits flush
+       inside .app-header-titles so the header reads as one compact block. */
+    .page-subtitle {
+      margin: 0;
       color: #94a3b8;
-      letter-spacing: 0.02em;
+      font-size: 0.95rem;
+      font-weight: 500;
+      letter-spacing: 0.01em;
     }
 
     .btn {
@@ -103,8 +211,8 @@
       align-items: center;
       justify-content: center;
       gap: 0.4rem;
-      min-height: 2.75rem;
-      padding: 0 1.1rem;
+      min-height: 3rem;
+      padding: 0 1.25rem;
       font: inherit;
       font-weight: 600;
       font-size: 1rem;
@@ -158,42 +266,13 @@
       border-color: #f59e0b;
     }
 
-    /* Order badge: shows pick order on selected stars. Color encodes primary vs supporting. */
-    .star-order-badge {
-      position: absolute;
-      top: -0.4rem;
-      right: -0.4rem;
-      min-width: 1.4rem;
-      height: 1.4rem;
-      padding: 0 0.35rem;
-      border-radius: 999px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.72rem;
-      font-weight: 700;
-      font-variant-numeric: tabular-nums;
-      line-height: 1;
-      color: #fff;
-      border: 2px solid #0f1419;
-      pointer-events: none;
-    }
-
-    .star-order-badge.is-primary {
-      background: #3b82f6;
-    }
-
-    .star-order-badge.is-supporting {
-      background: #64748b;
-    }
-
-    /* Explore: guided entry question — visually distinct from capability cards
-       so it reads as a "start here" step, not another card in the grid.
-       Blue-tinted callout, accent border, soft halo glow.                    */
+    /* Intro: guided entry question — visually distinct callout that lives
+       alongside the "How to use" steps in a two-column body. Tinted +
+       accent-bordered so it reads as a primary action zone. */
     .guided-entry {
       position: relative;
-      margin: 0 0 1.75rem;
-      padding: 1.25rem 1.35rem 1.4rem;
+      margin: 0;
+      padding: 1.4rem 1.5rem 1.5rem;
       background:
         linear-gradient(155deg, #16243e 0%, #172238 60%, #16213a 100%);
       border: 1px solid #334d80;
@@ -201,46 +280,35 @@
       box-shadow:
         inset 0 1px 0 rgba(147, 197, 253, 0.08),
         0 8px 24px -16px rgba(59, 130, 246, 0.45);
-    }
-
-    .guided-entry-step-label {
-      display: inline-block;
-      margin-bottom: 0.7rem;
-      padding: 0.28rem 0.6rem;
-      font-size: 0.66rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.14em;
-      color: #bfdbfe;
-      background: #1e3a5f;
-      border: 1px solid #1e40af;
-      border-radius: 999px;
+      display: flex;
+      flex-direction: column;
+      gap: 0.7rem;
     }
 
     .guided-entry-heading {
-      margin: 0 0 0.5rem;
-      font-size: 1.05rem;
+      margin: 0;
+      font-size: 1.2rem;
       font-weight: 650;
       color: #f1f5f9;
-      line-height: 1.4;
+      line-height: 1.35;
     }
 
     .guided-entry-helper {
-      margin: 0 0 0.85rem;
-      font-size: 0.82rem;
+      margin: 0;
+      font-size: 0.88rem;
       color: #94a3b8;
       line-height: 1.4;
     }
 
     .guided-entry-buttons {
       display: grid;
-      gap: 0.5rem;
+      gap: 0.55rem;
       grid-template-columns: 1fr;
     }
 
-    @media (min-width: 640px) {
+    @media (min-width: 1200px) {
       .guided-entry-buttons {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: 1fr 1fr;
       }
     }
 
@@ -249,15 +317,15 @@
       align-items: center;
       justify-content: flex-start;
       text-align: left;
-      min-height: 2.75rem;
-      padding: 0.55rem 0.9rem;
+      min-height: 3.4rem;
+      padding: 0.7rem 1.05rem;
       font: inherit;
-      font-size: 0.92rem;
+      font-size: 1rem;
       font-weight: 500;
       color: #cbd5e1;
       background: #0f1a2b;
       border: 1px solid #334155;
-      border-radius: 0.6rem;
+      border-radius: 0.7rem;
       cursor: pointer;
       touch-action: manipulation;
       line-height: 1.3;
@@ -274,55 +342,246 @@
       font-weight: 600;
     }
 
-    /* Explore: transition between the guided step and the card grid.
-       Heading + supporting copy swap based on whether a response is active. */
-    .grid-section {
+    /* Capability map: lede now sits in the body's top row (one short line)
+       and the optional recommend note rides directly below as a quiet
+       teal accent when a focus area is active. */
+    .map-intro-lede {
       margin: 0;
-    }
-
-    .grid-intro-heading {
-      margin: 0 0 0.35rem;
-      font-size: 1.15rem;
-      font-weight: 650;
-      letter-spacing: -0.01em;
-      color: #f1f5f9;
-    }
-
-    .grid-intro-lede {
-      margin: 0 0 1.1rem;
-      color: #94a3b8;
-      font-size: 0.92rem;
-      max-width: 42rem;
+      color: #cbd5e1;
+      font-size: 0.95rem;
       line-height: 1.4;
     }
 
-    /* Explore: card grid */
+    .map-recommend-note {
+      margin: 0;
+      color: #5eead4;
+      font-size: 0.85rem;
+      line-height: 1.35;
+    }
+
+    .map-recommend-note[hidden] {
+      display: none;
+    }
+
+    /* Wraps the map's lede + optional recommend note in a single compact
+       block so they don't each consume a separate row. */
+    .map-intro-block {
+      display: flex;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 0.7rem 1rem;
+    }
+
+    /* Grid Room Home (Touchscreen Entry): a single row of four large
+       experience cards. Body is a flex column that centers the row in
+       the lower half of the screen so a seated visitor can reach the
+       cards without leaning. */
+    .home-body {
+      align-items: center;
+      justify-content: center;
+      gap: 1.6rem;
+    }
+
+    .home-lede {
+      margin: 0;
+      color: #cbd5e1;
+      font-size: 1.05rem;
+      text-align: center;
+    }
+
+    .home-grid {
+      display: grid;
+      gap: 1.4rem;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      width: 100%;
+      max-width: 1700px;
+    }
+
+    .experience-card {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.6rem;
+      min-height: 14rem;
+      padding: 1.6rem 1.6rem 1.4rem;
+      background: #1a2332;
+      border-radius: 1rem;
+      border: 2px solid #2a3441;
+      color: #e8ecf1;
+      text-align: left;
+      font: inherit;
+      cursor: pointer;
+      touch-action: manipulation;
+      transition: border-color 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+    }
+
+    .experience-card:not(:disabled):hover {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 1px #3b82f640;
+    }
+
+    .experience-card:not(:disabled):active {
+      transform: scale(0.99);
+    }
+
+    .experience-card:not(:disabled):focus-visible {
+      outline: 2px solid #93c5fd;
+      outline-offset: 2px;
+    }
+
+    .experience-card:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+      background: #131c29;
+      border-color: #1f2937;
+    }
+
+    .experience-card-title {
+      font-size: 1.5rem;
+      font-weight: 650;
+      letter-spacing: -0.01em;
+    }
+
+    .experience-card-subtitle {
+      font-size: 0.95rem;
+      color: #94a3b8;
+      line-height: 1.4;
+    }
+
+    .experience-card-status {
+      margin-top: auto;
+      align-self: flex-start;
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #94a3b8;
+      background: #1e293b;
+      padding: 0.28rem 0.6rem;
+      border-radius: 0.35rem;
+      border: 1px solid #334155;
+    }
+
+    /* aiRMF Intro: two-column body — steps on the left, guided question
+       callout on the right — so the orientation content fits one screen
+       and the primary CTA lives in the bottom footer. */
+    .intro-body {
+      gap: 1.4rem;
+    }
+
+    .intro-lede {
+      margin: 0;
+      color: #cbd5e1;
+      font-size: 1.05rem;
+      line-height: 1.5;
+      max-width: 56rem;
+    }
+
+    .intro-columns {
+      flex: 1 1 auto;
+      min-height: 0;
+      display: grid;
+      gap: 1.6rem;
+      grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+      align-items: stretch;
+    }
+
+    .intro-steps {
+      margin: 0;
+      padding: 1.4rem 1.5rem;
+      background: #16202d;
+      border: 1px solid #2a3441;
+      border-radius: 0.85rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.7rem;
+    }
+
+    .intro-section-heading {
+      margin: 0;
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #93c5fd;
+    }
+
+    .step-list {
+      margin: 0;
+      padding: 0 0 0 1.4rem;
+      color: #cbd5e1;
+      font-size: 1.05rem;
+      line-height: 1.5;
+    }
+
+    .step-list li {
+      margin-bottom: 0.55rem;
+    }
+
+    .step-list li:last-child {
+      margin-bottom: 0;
+    }
+
+    @media (max-width: 900px) {
+      .intro-columns {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+      }
+    }
+
+    /* Capability map: 4×2 card grid filling the body so all eight
+       capabilities are visible at once on a 3840×2160 display without
+       scrolling. flex: 1 keeps cards distributing across the full
+       vertical space inside .view-body. */
+    .explore-body {
+      gap: 0.9rem;
+    }
+
     .card-grid {
       display: grid;
       gap: 1rem;
-      grid-template-columns: 1fr;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-auto-rows: 1fr;
+      flex: 1 1 auto;
+      min-height: 0;
     }
 
-    @media (min-width: 640px) {
+    @media (max-width: 1200px) {
       .card-grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 640px) {
+      .card-grid {
+        grid-template-columns: 1fr;
       }
     }
 
     .cap-card {
       display: flex;
       flex-direction: column;
-      gap: 0.75rem;
-      padding: 1.1rem 1.15rem;
+      gap: 0.6rem;
+      padding: 1.15rem 1.2rem;
       background: #1a2332;
       border-radius: 0.85rem;
       border: 2px solid #2a3441;
+      cursor: pointer;
       transition: border-color 0.15s ease, box-shadow 0.15s ease;
     }
 
-    /* Recommended is a softer accent so Selected (blue + glow) stays visually stronger. */
+    .cap-card:focus-visible {
+      outline: 2px solid #93c5fd;
+      outline-offset: 2px;
+    }
+
+    /* Recommended uses a quiet background lift only — never the border. The
+       border treatment is reserved exclusively for selection state so the
+       visual language stays one-to-one: colored border = in my AI Focus Map.
+       Recommended-ness is carried by the teal "Recommended" pill in the
+       badge row, plus the contextual "Recommended for: <priority>" line
+       inside the capability modal. */
     .cap-card.is-recommended {
-      border-color: #14b8a6;
       background: #182433;
     }
 
@@ -331,12 +590,15 @@
       box-shadow: 0 0 0 1px #3b82f680;
     }
 
-    .cap-card.is-selected.is-recommended {
-      border-color: #3b82f6;
+    /* Top-of-card badge row: holds Recommended and/or Viewed pills side-by-side. */
+    .cap-card-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      align-self: flex-start;
     }
 
     .cap-recommend-label {
-      align-self: flex-start;
       display: inline-flex;
       align-items: center;
       font-size: 0.65rem;
@@ -350,17 +612,35 @@
       border: 1px solid #134e4a;
     }
 
+    /* Viewed: subtle gray pill, deliberately quieter than Selected (amber/blue)
+       and Recommended (teal) so it never competes with selection state. */
+    .cap-viewed-label {
+      display: inline-flex;
+      align-items: center;
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #cbd5e1;
+      background: #1e293b;
+      padding: 0.2rem 0.5rem;
+      border-radius: 0.35rem;
+      border: 1px solid #334155;
+    }
+
     .cap-card h2 {
       margin: 0;
-      font-size: 1.1rem;
+      font-size: 1.15rem;
       font-weight: 650;
+      line-height: 1.25;
     }
 
     .cap-card p {
       margin: 0;
       flex: 1;
       color: #94a3b8;
-      font-size: 0.95rem;
+      font-size: 0.92rem;
+      line-height: 1.35;
     }
 
     .cap-card-footer {
@@ -368,16 +648,86 @@
       align-items: center;
       justify-content: space-between;
       gap: 0.75rem;
+      margin-top: auto;
     }
 
     .cap-card-footer .hint {
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       color: #94a3b8;
     }
 
-    /* Focus map */
-    .focus-list-lede {
-      margin: 0 0 0.9rem;
+    /* AI Focus Map: 3-column body — starred capabilities, contact
+       placeholder, and the QR takeaway sit side-by-side so the whole
+       synthesis surface fits one kiosk screen. */
+    .focus-body {
+      gap: 1rem;
+    }
+
+    .focus-page-lede {
+      margin: 0;
+      color: #cbd5e1;
+      font-size: 0.95rem;
+      line-height: 1.4;
+    }
+
+    .focus-page-lede[hidden] {
+      display: none;
+    }
+
+    .focus-columns {
+      flex: 1 1 auto;
+      min-height: 0;
+      display: grid;
+      gap: 1.4rem;
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.95fr) minmax(0, 0.9fr);
+      align-items: stretch;
+    }
+
+    .focus-col {
+      display: flex;
+      flex-direction: column;
+      gap: 0.7rem;
+      padding: 1.25rem 1.3rem 1.3rem;
+      background: #16202d;
+      border: 1px solid #2a3441;
+      border-radius: 0.85rem;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .focus-col-content {
+      overflow: hidden;
+    }
+
+    .focus-col-content #focus-content-host {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.7rem;
+    }
+
+    .focus-col-takeaway {
+      align-items: flex-start;
+    }
+
+    @media (max-width: 1100px) {
+      .focus-columns {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .focus-section-heading {
+      margin: 0;
+      font-size: 1.15rem;
+      font-weight: 650;
+      letter-spacing: -0.01em;
+      color: #f1f5f9;
+    }
+
+    .focus-section-lede {
+      margin: 0;
       color: #94a3b8;
       font-size: 0.88rem;
       line-height: 1.4;
@@ -389,127 +739,148 @@
       padding: 0;
       display: flex;
       flex-direction: column;
-      gap: 0.85rem;
+      gap: 0.65rem;
     }
 
     .focus-item {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 0.65rem;
-      padding: 1rem 1.1rem;
+      padding: 0.85rem 1rem;
       background: #1a2332;
-      border-radius: 0.85rem;
+      border-radius: 0.7rem;
       border: 1px solid #2a3441;
     }
 
-    .focus-item .badge {
-      flex-shrink: 0;
-      font-size: 0.72rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      padding: 0.35rem 0.55rem;
-      border-radius: 0.4rem;
-    }
-
-    .badge-primary {
-      background: #1e3a5f;
-      color: #93c5fd;
-    }
-
-    .badge-supporting {
-      background: #292524;
-      color: #d6d3d1;
-    }
-
     .focus-item h3 {
-      margin: 0 0 0.35rem;
-      font-size: 1.05rem;
-      width: 100%;
+      margin: 0 0 0.25rem;
+      font-size: 1rem;
     }
 
     .focus-item p {
       margin: 0;
       color: #94a3b8;
-      font-size: 0.9rem;
-      width: 100%;
+      font-size: 0.85rem;
+      line-height: 1.35;
     }
 
     .empty-state {
       text-align: center;
-      padding: 2.5rem 1.25rem;
+      padding: 1.6rem 1rem;
       background: #1a2332;
-      border-radius: 0.85rem;
+      border-radius: 0.7rem;
       border: 1px dashed #334155;
       color: #94a3b8;
+      font-size: 0.9rem;
     }
 
     .empty-state strong {
       display: block;
       color: #e8ecf1;
-      font-size: 1.1rem;
-      margin-bottom: 0.5rem;
+      font-size: 1.05rem;
+      margin-bottom: 0.4rem;
     }
 
-    /* Kiosk identifier — kept visible per spec, but demoted now that the
-       stateless QR no longer depends on it. Same muted treatment on both views. */
+    /* Kiosk session id chip — rendered inside the header as a tiny meta
+       label so it consumes minimal vertical space. */
     .session-hint,
     .focus-session-panel {
-      margin: 0 0 1.15rem;
-      padding: 0;
-      background: transparent;
-      border: none;
-      font-size: 0.8rem;
+      margin: 0;
+      font-size: 0.72rem;
       color: #94a3b8;
-      letter-spacing: 0.02em;
+      letter-spacing: 0.04em;
     }
 
-    .session-hint strong,
+    .session-hint .session-label,
+    .focus-session-panel .session-label {
+      font-weight: 600;
+      color: #94a3b8;
+    }
+
+    .session-hint .session-id-value,
     .focus-session-panel .session-id-value {
       color: #cbd5e1;
       font-weight: 600;
       font-variant-numeric: tabular-nums;
     }
 
-    .focus-session-panel .session-label {
-      font-weight: 600;
-      color: #94a3b8;
-    }
-
-    /* Continue later + QR (Focus map) */
+    /* Takeaway column — QR + URL + copy action stacked. The .continue-later
+       wrapper no longer needs the top border/padding from the old vertical
+       stack layout; the column treatment supplies its own visual frame. */
     .continue-later {
-      margin-top: 2rem;
-      padding-top: 1.5rem;
-      border-top: 1px solid #2a3441;
-    }
-
-    .continue-later-heading {
-      margin: 0 0 0.5rem;
-      font-size: 1.1rem;
-      font-weight: 650;
+      margin: 0;
+      padding: 0;
+      border: none;
     }
 
     .continue-later-lede {
-      margin: 0 0 1rem;
+      margin: 0;
       color: #94a3b8;
-      font-size: 0.95rem;
-      max-width: 36rem;
+      font-size: 0.88rem;
+      line-height: 1.4;
+    }
+
+    /* Contact Information: visual-only placeholder. The column treatment
+       (.focus-col) supplies the frame, so no extra top border/padding. */
+    .contact-section {
+      margin: 0;
+      padding: 0;
+      border: none;
+    }
+
+    .placeholder-note {
+      margin: 0;
+      font-size: 0.8rem;
+      color: #94a3b8;
+      font-style: italic;
+    }
+
+    .contact-form-placeholder {
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+    }
+
+    .placeholder-field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      opacity: 0.7;
+    }
+
+    .placeholder-field-label {
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .placeholder-field input {
+      font: inherit;
+      font-size: 0.9rem;
+      padding: 0.55rem 0.7rem;
+      background: #131c29;
+      color: #94a3b8;
+      border: 1px dashed #334155;
+      border-radius: 0.5rem;
+      cursor: not-allowed;
+    }
+
+    .placeholder-field input::placeholder {
+      color: #475569;
     }
 
     .focus-qr-mount {
       display: inline-block;
-      padding: 0.65rem;
+      padding: 0.6rem;
       background: #fff;
       border-radius: 0.65rem;
       line-height: 0;
+      align-self: flex-start;
     }
 
     .focus-qr-mount img {
       display: block;
-      width: 256px;
-      height: 256px;
+      width: 224px;
+      height: 224px;
     }
 
     .qr-actions {
@@ -517,7 +888,6 @@
       align-items: center;
       gap: 0.5rem;
       flex-wrap: wrap;
-      margin-top: 0.75rem;
     }
 
     .btn-copy {
@@ -541,15 +911,55 @@
       font-variant-numeric: tabular-nums;
     }
 
-    /* Developer handoff JSON preview (Focus map) */
+    /* Technical preview (Focus map): tiny inline disclosure beneath the
+       3-column body, collapsed by default so it never claims primary
+       visual real estate on the kiosk. */
     .handoff-dev {
-      margin-top: 2rem;
-      padding-top: 1.5rem;
-      border-top: 1px solid #2a3441;
+      flex-shrink: 0;
+      margin: 0;
+      padding: 0;
+      border: none;
+    }
+
+    .handoff-dev-summary {
+      cursor: pointer;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #94a3b8;
+      list-style: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.35rem 0;
+      user-select: none;
+    }
+
+    .handoff-dev-summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .handoff-dev-summary::before {
+      content: "▸";
+      font-size: 0.7rem;
+      color: #64748b;
+      display: inline-block;
+      transition: transform 0.15s ease;
+    }
+
+    details[open] > .handoff-dev-summary::before {
+      transform: rotate(90deg);
+    }
+
+    .handoff-dev-summary:focus-visible {
+      outline: 2px solid #93c5fd;
+      outline-offset: 2px;
+      border-radius: 0.25rem;
     }
 
     .handoff-dev-explainer {
-      margin: 0 0 0.85rem;
+      margin: 0.75rem 0 0.85rem;
       color: #94a3b8;
       font-size: 0.88rem;
       max-width: 42rem;
@@ -557,12 +967,12 @@
     }
 
     .handoff-pre {
-      margin: 0;
-      padding: 1rem;
-      max-height: 22rem;
+      margin: 0.5rem 0 0;
+      padding: 0.8rem;
+      max-height: 9rem;
       overflow: auto;
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-      font-size: 0.72rem;
+      font-size: 0.7rem;
       line-height: 1.35;
       color: #cbd5e1;
       background: #0c1220;
@@ -570,6 +980,214 @@
       border-radius: 0.55rem;
       white-space: pre-wrap;
       word-break: break-word;
+    }
+
+    /* Capability detail modal: opened by clicking a card; star button stops
+       propagation so it never opens the modal accidentally. */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(8, 12, 20, 0.78);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.25rem;
+      overflow-y: auto;
+    }
+
+    .modal-overlay[hidden] {
+      display: none;
+    }
+
+    /* Kiosk modal: wider canvas (up to 78rem) with a 2-column section
+       grid so Why / Examples / Implementation read at a glance without
+       scrolling. All action controls live in a sticky bottom footer
+       (.modal-footer) — including the close button, which moved out of
+       the top-right corner so it's reachable from the lower half of
+       a tall touchscreen. */
+    .modal-content {
+      position: relative;
+      width: 100%;
+      max-width: 78rem;
+      max-height: calc(100vh - 3rem);
+      display: flex;
+      flex-direction: column;
+      padding: 0;
+      background: #1a2332;
+      border: 1px solid #334155;
+      border-radius: 1rem;
+      color: #e8ecf1;
+      box-shadow: 0 20px 60px -20px rgba(0, 0, 0, 0.5);
+      overflow: hidden;
+    }
+
+    .modal-header {
+      padding: 1.6rem 1.9rem 1rem;
+      border-bottom: 1px solid #2a3441;
+      flex-shrink: 0;
+    }
+
+    .modal-body {
+      padding: 1.4rem 1.9rem;
+      overflow-y: auto;
+      flex: 1 1 auto;
+      min-height: 0;
+    }
+
+    .modal-sections {
+      display: grid;
+      gap: 1.4rem;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    }
+
+    .modal-section--wide {
+      grid-column: 1 / -1;
+    }
+
+    @media (max-width: 900px) {
+      .modal-sections {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .modal-title {
+      margin: 0 0 0.55rem;
+      font-size: 1.55rem;
+      font-weight: 650;
+      letter-spacing: -0.01em;
+      color: #f1f5f9;
+      line-height: 1.2;
+    }
+
+    .modal-description {
+      margin: 0;
+      color: #cbd5e1;
+      font-size: 1.05rem;
+      line-height: 1.5;
+    }
+
+    .modal-section {
+      margin: 0;
+    }
+
+    .modal-section h3 {
+      margin: 0 0 0.45rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #93c5fd;
+    }
+
+    .modal-section p,
+    .modal-section ul {
+      margin: 0;
+      color: #cbd5e1;
+      font-size: 0.98rem;
+      line-height: 1.5;
+    }
+
+    .modal-section ul {
+      padding-left: 1.25rem;
+    }
+
+    .modal-section ul li {
+      margin-bottom: 0.3rem;
+    }
+
+    .modal-section ul li:last-child {
+      margin-bottom: 0;
+    }
+
+    /* Modal footer: all action controls in a single bottom bar so visitors
+       never have to reach the top of the screen to close or select. */
+    .modal-footer {
+      flex-shrink: 0;
+      padding: 1.1rem 1.9rem 1.25rem;
+      border-top: 1px solid #2a3441;
+      background: #131c29;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .modal-pager {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+    }
+
+    .modal-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      flex-wrap: wrap;
+    }
+
+    .modal-status {
+      font-size: 0.92rem;
+      color: #94a3b8;
+    }
+
+    /* In-modal recommendation framing. Appears in the header (under the
+       description) only when the open capability is recommended by the
+       visitor's current guided-question priority — closing the loop
+       between the intro question and the card they're considering.
+       Deliberately not a pill: the card already shows the "Recommended"
+       pill, so the modal's job is to add the missing context (FOR WHAT). */
+    .modal-recommend-context {
+      margin: 0.7rem 0 0;
+      display: flex;
+      align-items: baseline;
+      gap: 0.45rem;
+      font-size: 0.95rem;
+      color: #5eead4;
+    }
+
+    .modal-recommend-context::before {
+      content: "★";
+      color: #14b8a6;
+      font-size: 0.85rem;
+    }
+
+    .modal-recommend-context[hidden] {
+      display: none;
+    }
+
+    .modal-recommend-context-priority {
+      color: #cbd5e1;
+      font-weight: 500;
+    }
+
+    /* The close button is now an inline footer action — drop the absolute
+       positioning the old top-right × used. Same id, same JS listener. */
+    .modal-close {
+      position: static;
+      min-width: 0;
+      min-height: 3rem;
+      padding: 0 1.25rem;
+      background: #1e293b;
+      color: #e8ecf1;
+      border: 1px solid #334155;
+      border-radius: 0.65rem;
+      cursor: pointer;
+      font-size: 1rem;
+      line-height: 1;
+      font-weight: 600;
+    }
+
+    .modal-close:active {
+      background: #283448;
+    }
+
+    .modal-close:focus-visible {
+      outline: 2px solid #93c5fd;
+      outline-offset: 2px;
     }
 
     /* Toast: transient feedback for selection changes / clear action. */
@@ -603,69 +1221,253 @@
         transition: opacity 0.01s linear;
       }
     }
+
+    /* The capability-map-footer-status element is now styled by the shared
+       .view-footer-status rule (it lives directly inside .view-footer);
+       this id-targeted rule just preserves the live-region text color and
+       weight if any external CSS keys off the original class name. */
+    .capability-map-footer-status {
+      color: #cbd5e1;
+      font-size: 1rem;
+      font-weight: 500;
+    }
+
+    /* Modal pager: prev/position/next now lives inside .modal-footer as
+       the left-most action group. The position label sits between the
+       Prev/Next buttons so it visually anchors the pager. */
+    .modal-position {
+      font-size: 0.85rem;
+      color: #94a3b8;
+      letter-spacing: 0.02em;
+      min-width: 4rem;
+      text-align: center;
+    }
+
+    .modal-pager .btn {
+      min-width: 0;
+      padding: 0 1rem;
+    }
+
+    .modal-pager .btn[disabled] {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
   </style>
 </head>
 <body>
-  <!-- Explore: selectable capability cards -->
-  <div id="view-explore" class="view is-active" aria-hidden="false">
+  <!-- Touchscreen Entry: shared Grid Room launcher. Single-screen layout —
+       header at top, four large experience cards centered in the body. -->
+  <div id="view-home" class="view is-active" aria-hidden="false">
     <header class="app-header">
-      <h1>Explore capabilities</h1>
-      <div class="header-actions">
-        <button type="button" class="btn btn-ghost btn-clear" id="btn-clear-selections" hidden>
-          Clear selections
+      <h1>Grid Room Experiences</h1>
+    </header>
+    <div class="view-body home-body">
+      <p class="home-lede">Choose an experience to begin.</p>
+      <div class="home-grid" role="list">
+        <button type="button" class="experience-card" id="btn-experience-airmf" role="listitem">
+          <span class="experience-card-title">aiRMF</span>
+          <span class="experience-card-subtitle">AI readiness, priorities, and capability focus areas.</span>
         </button>
-        <button type="button" class="btn btn-primary" id="btn-to-focus">
-          View focus map
+        <button type="button" class="experience-card" role="listitem" disabled aria-disabled="true" aria-label="Future Experience, coming soon">
+          <span class="experience-card-title">Future Experience</span>
+          <span class="experience-card-status">Coming soon</span>
+        </button>
+        <button type="button" class="experience-card" role="listitem" disabled aria-disabled="true" aria-label="Future Experience, coming soon">
+          <span class="experience-card-title">Future Experience</span>
+          <span class="experience-card-status">Coming soon</span>
+        </button>
+        <button type="button" class="experience-card" role="listitem" disabled aria-disabled="true" aria-label="Future Experience, coming soon">
+          <span class="experience-card-title">Future Experience</span>
+          <span class="experience-card-status">Coming soon</span>
         </button>
       </div>
-    </header>
-    <p class="spike-disclaimer" role="note">Technical feasibility spike — not production software.</p>
-    <p class="session-hint" id="explore-session-display" aria-label="Kiosk session identifier"></p>
-    <section class="guided-entry" aria-labelledby="guided-entry-heading">
-      <span class="guided-entry-step-label">Start here</span>
-      <h2 class="guided-entry-heading" id="guided-entry-heading">
-        Where do you see the most immediate opportunity for AI in your organization?
-      </h2>
-      <p class="guided-entry-helper" id="guided-entry-helper" hidden>
-        Based on your priority, we’ve highlighted capabilities that may help achieve that outcome. You can refine your selections at any time.
-      </p>
-      <div id="guided-entry-host" class="guided-entry-buttons" role="group" aria-label="Opportunity area"></div>
-    </section>
-    <section class="grid-section" aria-labelledby="grid-intro-heading">
-      <h2 class="grid-intro-heading" id="grid-intro-heading">Explore capabilities</h2>
-      <p class="grid-intro-lede" id="grid-intro-lede">Answer the question above to highlight a recommended starting point, or select capabilities manually.</p>
-      <div id="explore-card-host" class="card-grid" role="list"></div>
-    </section>
+    </div>
   </div>
 
-  <!-- Focus map: summary of selections with primary / supporting labels -->
+  <!-- aiRMF Intro: orientation + optional focus question. Single-screen
+       layout — title at top, two-column body (steps | guided question),
+       Exit + Continue in the reachable bottom footer. -->
+  <div id="view-airmf-intro" class="view" aria-hidden="true">
+    <header class="app-header">
+      <div class="app-header-titles">
+        <h1>aiRMF</h1>
+        <p class="page-subtitle">AI Readiness and Management Framework</p>
+      </div>
+    </header>
+    <div class="view-body intro-body">
+      <p class="intro-lede">
+        Identify where AI creates value and shape a focused path forward.
+      </p>
+      <div class="intro-columns">
+        <section class="intro-steps" aria-labelledby="intro-steps-heading">
+          <h2 class="intro-section-heading" id="intro-steps-heading">How to use this experience</h2>
+          <ol class="step-list">
+            <li>Choose an outcome to explore.</li>
+            <li>Review recommended aiRMF capabilities.</li>
+            <li>Star capabilities to build your AI Focus Map.</li>
+          </ol>
+        </section>
+        <section class="guided-entry" aria-labelledby="guided-entry-heading">
+          <h2 class="guided-entry-heading" id="guided-entry-heading">
+            Where do you see the most immediate AI opportunity?
+          </h2>
+          <p class="guided-entry-helper" id="guided-entry-helper"></p>
+          <div id="guided-entry-host" class="guided-entry-buttons" role="group" aria-label="Opportunity area"></div>
+        </section>
+      </div>
+    </div>
+    <footer class="view-footer">
+      <button type="button" class="btn btn-ghost btn-clear" id="btn-intro-home">Exit Experience</button>
+      <button type="button" id="btn-to-explore" class="btn btn-primary btn-large">
+        Continue to Capability Map
+      </button>
+    </footer>
+  </div>
+
+  <!-- aiRMF Capability Map: 4×2 card grid fits all eight capabilities on
+       one screen; all interactive controls live in the bottom footer for
+       reach. -->
+  <div id="view-explore" class="view" aria-hidden="true">
+    <header class="app-header">
+      <div class="app-header-titles">
+        <h1>aiRMF Capability Map</h1>
+        <p class="map-intro-lede">Open a capability for details. Star the ones to carry forward.</p>
+      </div>
+      <p class="session-hint header-meta" id="explore-session-display" aria-label="Kiosk session identifier"></p>
+      <!-- Kept in the DOM so the existing JS getElementById()+addEventListener()
+           wiring for the original header-twin buttons does not throw. The
+           visible/functional instances live in the view footer below. -->
+      <div class="header-actions header-actions--hidden" aria-hidden="true">
+        <button type="button" class="btn btn-ghost btn-clear" id="btn-clear-selections" hidden>Clear selections</button>
+        <button type="button" class="btn btn-primary" id="btn-to-focus" disabled aria-disabled="true">View AI Focus Map</button>
+      </div>
+    </header>
+    <div class="view-body explore-body">
+      <p class="map-recommend-note" id="map-recommend-note" hidden>
+        Recommended capabilities highlighted from your focus area.
+      </p>
+      <div id="explore-card-host" class="card-grid"></div>
+    </div>
+    <footer class="view-footer" aria-label="Capability Map actions">
+      <button type="button" class="btn btn-ghost" id="btn-back-to-intro">Back to aiRMF intro</button>
+      <span class="capability-map-footer-status view-footer-status" id="capability-map-footer-status" aria-live="polite">No capabilities selected</span>
+      <div class="view-footer-actions">
+        <button type="button" class="btn btn-ghost btn-clear" id="btn-clear-selections-footer" hidden>
+          Clear selections
+        </button>
+        <button type="button" class="btn btn-primary btn-large" id="btn-to-focus-footer" disabled aria-disabled="true">
+          View AI Focus Map
+        </button>
+      </div>
+    </footer>
+  </div>
+
+  <!-- AI Focus Map: synthesis screen. 3-column body (starred capabilities |
+       contact placeholder | QR takeaway) fits one screen; navigation lives
+       in the bottom footer. -->
   <div id="view-focus" class="view" aria-hidden="true">
     <header class="app-header">
-      <h1>Focus map</h1>
-      <button type="button" class="btn btn-ghost" id="btn-back-explore">
-        Back to explore
-      </button>
+      <h1>AI Focus Map</h1>
+      <span class="focus-session-panel header-meta" id="focus-session-display" role="status" aria-live="polite"></span>
     </header>
-    <p class="spike-disclaimer" role="note">Technical feasibility spike — not production software.</p>
-    <div class="focus-session-panel" id="focus-session-display" role="status" aria-live="polite"></div>
-    <div id="focus-content-host"></div>
-    <section class="continue-later" id="focus-continue-section" aria-labelledby="continue-later-heading">
-      <h2 class="continue-later-heading" id="continue-later-heading">Continue later</h2>
-      <p class="continue-later-lede">Scan to open this focus map outside the kiosk — selections travel in the URL itself.</p>
-      <div id="focus-qr-mount" class="focus-qr-mount" role="img" aria-label="QR code for stateless focus URL"></div>
-      <div class="qr-actions">
-        <button type="button" id="btn-copy-url" class="btn btn-ghost btn-copy" aria-live="polite">Copy URL</button>
-      </div>
-      <p id="focus-qr-url-text" class="qr-url-muted"></p>
-    </section>
-    <section class="handoff-dev" id="focus-handoff-section" aria-labelledby="handoff-dev-heading">
-      <h2 class="continue-later-heading" id="handoff-dev-heading">Stateless parameter preview</h2>
-      <p class="handoff-dev-explainer">
-        This QR encodes the selected capabilities directly in the URL. No session lookup or backend persistence is required for this variant.
+    <div class="view-body focus-body">
+      <p class="focus-page-lede" id="focus-page-lede" hidden>
+        Capabilities you selected to carry forward.
       </p>
-      <pre id="focus-handoff-pre" class="handoff-pre" aria-label="Stateless URL parameter preview"></pre>
-    </section>
+      <div class="focus-columns">
+        <section class="focus-col focus-col-content" aria-label="Starred capabilities">
+          <div id="focus-content-host"></div>
+        </section>
+        <section class="focus-col focus-col-contact contact-section" aria-labelledby="contact-heading">
+          <h2 class="focus-section-heading" id="contact-heading">Contact Information</h2>
+          <p class="placeholder-note">Placeholder — fields are disabled.</p>
+          <div class="contact-form-placeholder" aria-hidden="true">
+            <label class="placeholder-field">
+              <span class="placeholder-field-label">Name</span>
+              <input type="text" disabled placeholder="Visitor name" />
+            </label>
+            <label class="placeholder-field">
+              <span class="placeholder-field-label">Organization</span>
+              <input type="text" disabled placeholder="Company or team" />
+            </label>
+            <label class="placeholder-field">
+              <span class="placeholder-field-label">Email</span>
+              <input type="email" disabled placeholder="name@example.com" />
+            </label>
+          </div>
+        </section>
+        <section class="focus-col focus-col-takeaway continue-later" id="focus-continue-section" aria-labelledby="continue-later-heading">
+          <h2 class="focus-section-heading" id="continue-later-heading">Takeaway</h2>
+          <p class="continue-later-lede">Scan to open this AI Focus Map outside the Grid Room.</p>
+          <div id="focus-qr-mount" class="focus-qr-mount" role="img" aria-label="QR code for stateless focus URL"></div>
+          <div class="qr-actions">
+            <button type="button" id="btn-copy-url" class="btn btn-ghost btn-copy" aria-live="polite">Copy URL</button>
+          </div>
+          <p id="focus-qr-url-text" class="qr-url-muted"></p>
+        </section>
+      </div>
+      <details class="handoff-dev" id="focus-handoff-section">
+        <summary class="handoff-dev-summary">Technical preview</summary>
+        <pre id="focus-handoff-pre" class="handoff-pre" aria-label="Stateless URL parameter preview"></pre>
+      </details>
+    </div>
+    <footer class="view-footer" aria-label="AI Focus Map actions">
+      <button type="button" class="btn btn-ghost btn-clear" id="btn-focus-home">Exit Experience</button>
+      <button type="button" class="btn btn-ghost btn-large" id="btn-back-explore">
+        Back to Capability Map
+      </button>
+    </footer>
   </div>
+
+  <!-- Capability detail modal — populated by openCapabilityModal().
+       Kiosk layout: title + description on top, 2-column sections in
+       the scrollable body, and ALL actions (close, pager, select) in
+       the bottom footer so a seated visitor can reach every control. -->
+  <div id="capability-modal" class="modal-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-content">
+      <header class="modal-header">
+        <h2 class="modal-title" id="modal-title"></h2>
+        <p class="modal-description" id="modal-description"></p>
+        <p class="modal-recommend-context" id="modal-recommend-context" hidden>
+          <span>Recommended for:</span>
+          <span class="modal-recommend-context-priority" id="modal-recommend-context-priority"></span>
+        </p>
+      </header>
+      <div class="modal-body">
+        <div class="modal-sections">
+          <section class="modal-section">
+            <h3>Why it matters</h3>
+            <p id="modal-why"></p>
+          </section>
+          <section class="modal-section">
+            <h3>Example use cases</h3>
+            <ul id="modal-examples"></ul>
+          </section>
+          <section class="modal-section modal-section--wide">
+            <h3>Implementation notes</h3>
+            <p id="modal-implementation"></p>
+          </section>
+        </div>
+      </div>
+      <footer class="modal-footer">
+        <nav class="modal-pager" aria-label="Capability navigation">
+          <button type="button" id="modal-prev-btn" class="btn btn-ghost" aria-label="Previous capability">← Previous</button>
+          <span class="modal-position" id="modal-position" aria-live="polite"></span>
+          <button type="button" id="modal-next-btn" class="btn btn-ghost" aria-label="Next capability">Next →</button>
+        </nav>
+        <div class="modal-actions">
+          <span class="modal-status" id="modal-status" aria-live="polite"></span>
+          <button type="button" id="modal-close-btn" class="modal-close" aria-label="Close capability details">Close</button>
+          <button type="button" id="modal-toggle-btn" class="btn btn-primary btn-large"></button>
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <!-- Persistent prototype disclaimer: one fixed bottom-right element shown
+       across every view. Replaces the per-view duplicates that previously
+       repeated this line on each screen. -->
+  <p class="spike-disclaimer" role="note">Technical feasibility spike — not production software.</p>
 
   <!-- Toast: transient confirmation for selection / clear actions. -->
   <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
@@ -702,25 +1504,17 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
     var STATELESS_FOCUS_BASE_URL = "https://example.invalid/focus";
 
     /**
-     * Stateless handoff URL: selections are encoded directly as query params.
-     * First two selectedCapabilities → primary, the rest → supporting.
-     * No sessionId, no backend lookup; the URL alone reconstructs the focus map.
+     * Stateless handoff URL: selected capability ids are encoded directly as a
+     * single comma-separated `caps` parameter. No primary/supporting split, no
+     * sessionId, no backend lookup; the URL alone reconstructs the focus map.
      * Returns the bare base URL when there are no selections.
      */
     function buildStatelessFocusUrl() {
       if (selectedCapabilities.length === 0) {
         return STATELESS_FOCUS_BASE_URL;
       }
-      var primary = selectedCapabilities.slice(0, 2);
-      var supporting = selectedCapabilities.slice(2);
-      var params = [];
-      if (primary.length > 0) {
-        params.push("primary=" + primary.map(encodeURIComponent).join(","));
-      }
-      if (supporting.length > 0) {
-        params.push("supporting=" + supporting.map(encodeURIComponent).join(","));
-      }
-      return STATELESS_FOCUS_BASE_URL + "?" + params.join("&");
+      return STATELESS_FOCUS_BASE_URL +
+        "?caps=" + selectedCapabilities.map(encodeURIComponent).join(",");
     }
 
     function clearQrMount(containerEl) {
@@ -866,26 +1660,39 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
     var clearArmed = false;
     var clearArmTimer = null;
 
+    // The Capability Map exposes Clear in two places (header + sticky footer)
+    // so the action stays in reach when the card grid is scrolled. Both
+    // buttons share a single armed-state — armed text and styling stay in
+    // sync regardless of which one received the first tap.
+    function getClearButtons() {
+      var btns = [];
+      var header = document.getElementById("btn-clear-selections");
+      var footer = document.getElementById("btn-clear-selections-footer");
+      if (header) btns.push(header);
+      if (footer) btns.push(footer);
+      return btns;
+    }
+
     function resetClearArmState() {
-      var btn = document.getElementById("btn-clear-selections");
       clearArmed = false;
       if (clearArmTimer) {
         clearTimeout(clearArmTimer);
         clearArmTimer = null;
       }
-      if (btn) {
+      getClearButtons().forEach(function (btn) {
         btn.textContent = "Clear selections";
         btn.classList.remove("is-armed");
-      }
+      });
     }
 
     function handleClearSelectionsClick() {
-      var btn = document.getElementById("btn-clear-selections");
-      if (!btn || selectedCapabilities.length === 0) return;
+      if (selectedCapabilities.length === 0) return;
       if (!clearArmed) {
         clearArmed = true;
-        btn.textContent = "Tap again to confirm";
-        btn.classList.add("is-armed");
+        getClearButtons().forEach(function (btn) {
+          btn.textContent = "Tap again to confirm";
+          btn.classList.add("is-armed");
+        });
         clearArmTimer = setTimeout(resetClearArmState, CLEAR_ARM_MS);
         return;
       }
@@ -902,12 +1709,246 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
     }
 
     /* -------------------------------------------------------------------------- */
+    /* Viewed capabilities (in-memory only; not encoded in URL, not in Focus map) */
+    /* Set when the capability detail modal opens; cleared on full page refresh.  */
+    /* -------------------------------------------------------------------------- */
+
+    var viewedCapabilities = {};
+
+    function isCapabilityViewed(capabilityId) {
+      return !!viewedCapabilities[capabilityId];
+    }
+
+    function markCapabilityViewed(capabilityId) {
+      viewedCapabilities[capabilityId] = true;
+    }
+
+    /* -------------------------------------------------------------------------- */
+    /* Capability detail modal                                                    */
+    /* Vanilla DOM, no library. Dismissible via close button, overlay click, or  */
+    /* Escape. Selecting/deselecting from inside the modal goes through the same */
+    /* toggleSelection() path as the card star — no separate selection state.    */
+    /* -------------------------------------------------------------------------- */
+
+    var currentModalCapabilityId = null;
+    var lastFocusedCapabilityId = null;
+
+    /** Populate the modal's content (title, description, sections, pager,
+     *  status, toggle) for a given capability. Also marks it Viewed and
+     *  remembers it as the focus-restore target on close. Used both when
+     *  opening the modal fresh and when paging Prev/Next inside it. */
+    function loadCapabilityIntoModal(capabilityId) {
+      var cap = capabilityById(capabilityId);
+      if (!cap) return;
+      currentModalCapabilityId = capabilityId;
+      lastFocusedCapabilityId = capabilityId;
+
+      markCapabilityViewed(capabilityId);
+
+      document.getElementById("modal-title").textContent = cap.title;
+      document.getElementById("modal-description").textContent = cap.description;
+      document.getElementById("modal-why").textContent = cap.whyItMatters || "";
+      document.getElementById("modal-implementation").textContent = cap.implementationNotes || "";
+
+      var examplesEl = document.getElementById("modal-examples");
+      examplesEl.innerHTML = "";
+      var examples = cap.exampleUseCases || [];
+      for (var i = 0; i < examples.length; i++) {
+        var li = document.createElement("li");
+        li.textContent = examples[i];
+        examplesEl.appendChild(li);
+      }
+
+      // Surface the *why this is on your radar* context that the card pill
+      // can't fit: name the priority that triggered the recommendation.
+      // Only shown when the current capability is mapped to the visitor's
+      // active guided-question response — otherwise the line is hidden and
+      // collapses out of layout (display: none via the [hidden] selector).
+      var recommendEl = document.getElementById("modal-recommend-context");
+      var priorityEl = document.getElementById("modal-recommend-context-priority");
+      if (recommendEl && priorityEl) {
+        if (isCapabilityRecommended(capabilityId)) {
+          var priorityLabel = "";
+          for (var j = 0; j < QUESTION_RESPONSES.length; j++) {
+            if (QUESTION_RESPONSES[j].id === selectedQuestionResponse) {
+              priorityLabel = QUESTION_RESPONSES[j].label;
+              break;
+            }
+          }
+          priorityEl.textContent = priorityLabel;
+          recommendEl.hidden = false;
+        } else {
+          priorityEl.textContent = "";
+          recommendEl.hidden = true;
+        }
+      }
+
+      updateModalSelectionState();
+      updateModalNavState();
+    }
+
+    function openCapabilityModal(capabilityId) {
+      var cap = capabilityById(capabilityId);
+      if (!cap) return;
+      loadCapabilityIntoModal(capabilityId);
+
+      var overlay = document.getElementById("capability-modal");
+      overlay.hidden = false;
+      // Lock background scroll while the modal owns the viewport.
+      document.body.style.overflow = "hidden";
+
+      // Re-render Explore so the underlying card immediately shows the
+      // new "Viewed" pill once the modal closes.
+      renderExploreView();
+
+      // Move focus into the modal for keyboard / screen reader users.
+      setTimeout(function () {
+        var closeBtn = document.getElementById("modal-close-btn");
+        if (closeBtn) closeBtn.focus();
+      }, 0);
+    }
+
+    /** Index of the currently-open capability within CAPABILITIES; -1 if
+     *  none. Used by the modal pager to compute Prev/Next destinations. */
+    function getCurrentCapabilityIndex() {
+      for (var i = 0; i < CAPABILITIES.length; i++) {
+        if (CAPABILITIES[i].id === currentModalCapabilityId) return i;
+      }
+      return -1;
+    }
+
+    /** Update the modal pager: position label ("3 of 8") + disabled state
+     *  for the Prev/Next buttons at the ends of the list. */
+    function updateModalNavState() {
+      var idx = getCurrentCapabilityIndex();
+      var total = CAPABILITIES.length;
+      var prev = document.getElementById("modal-prev-btn");
+      var next = document.getElementById("modal-next-btn");
+      var pos = document.getElementById("modal-position");
+
+      if (pos) pos.textContent = idx >= 0 ? (idx + 1) + " of " + total : "";
+      var prevDisabled = idx <= 0;
+      var nextDisabled = idx < 0 || idx >= total - 1;
+      if (prev) {
+        prev.disabled = prevDisabled;
+        prev.setAttribute("aria-disabled", prevDisabled ? "true" : "false");
+      }
+      if (next) {
+        next.disabled = nextDisabled;
+        next.setAttribute("aria-disabled", nextDisabled ? "true" : "false");
+      }
+    }
+
+    /** Swap the modal's content to the prev/next capability in place
+     *  (delta = -1 or +1). Re-renders the Explore grid so the new Viewed
+     *  pill is applied to the underlying card, and scrolls modal content
+     *  back to the top so the new title is what's visible. Keeps focus on
+     *  the pressed nav button when it remains enabled; otherwise falls
+     *  back to the still-focusable opposite button or the close button. */
+    function navigateModal(delta) {
+      var idx = getCurrentCapabilityIndex();
+      if (idx < 0) return;
+      var nextIdx = idx + delta;
+      if (nextIdx < 0 || nextIdx >= CAPABILITIES.length) return;
+      loadCapabilityIntoModal(CAPABILITIES[nextIdx].id);
+      renderExploreView();
+
+      var content = document.querySelector("#capability-modal .modal-content");
+      if (content) content.scrollTop = 0;
+
+      var preferredId = delta < 0 ? "modal-prev-btn" : "modal-next-btn";
+      var preferred = document.getElementById(preferredId);
+      if (preferred && !preferred.disabled) {
+        preferred.focus();
+      } else {
+        var fallbackId = delta < 0 ? "modal-next-btn" : "modal-prev-btn";
+        var fallback = document.getElementById(fallbackId);
+        if (fallback && !fallback.disabled) fallback.focus();
+        else {
+          var closeBtn = document.getElementById("modal-close-btn");
+          if (closeBtn) closeBtn.focus();
+        }
+      }
+    }
+
+    /** Focus trap + pager keyboard shortcut for the capability modal.
+     *  Tab / Shift+Tab loop focus within the modal so keyboard users
+     *  can't accidentally tab out into the (inert) background. */
+    function handleModalKeydown(e) {
+      if (e.key !== "Tab") return;
+      var modal = document.getElementById("capability-modal");
+      if (!modal || modal.hidden) return;
+      var nodes = modal.querySelectorAll(
+        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      );
+      if (nodes.length === 0) return;
+      var first = nodes[0];
+      var last = nodes[nodes.length - 1];
+      var active = document.activeElement;
+      if (e.shiftKey && active === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && active === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+
+    function closeCapabilityModal() {
+      var overlay = document.getElementById("capability-modal");
+      if (!overlay || overlay.hidden) return;
+      overlay.hidden = true;
+      document.body.style.overflow = "";
+      currentModalCapabilityId = null;
+
+      // Return focus to the originating card. The card was re-rendered when
+      // the modal opened, so look it up by data-capability-id rather than
+      // holding a stale DOM reference.
+      if (lastFocusedCapabilityId) {
+        var card = document.querySelector(
+          '.cap-card[data-capability-id="' + lastFocusedCapabilityId + '"]'
+        );
+        if (card && typeof card.focus === "function") card.focus();
+        lastFocusedCapabilityId = null;
+      }
+    }
+
+    /** Refresh the modal status line + toggle button label after a selection
+     *  change. Copy uses the same star metaphor as the card's ★ button and
+     *  the intro's "Star capabilities…" priming, so the action verb is
+     *  consistent across the experience. */
+    function updateModalSelectionState() {
+      if (!currentModalCapabilityId) return;
+      var statusEl = document.getElementById("modal-status");
+      var toggleBtn = document.getElementById("modal-toggle-btn");
+      var selected = isSelected(currentModalCapabilityId);
+      if (statusEl) {
+        statusEl.textContent = selected ? "Starred." : "Not starred.";
+      }
+      if (toggleBtn) {
+        toggleBtn.textContent = selected
+          ? "Remove star"
+          : "Star this capability";
+        // Visually de-emphasize the action when it's a removal.
+        toggleBtn.classList.toggle("btn-primary", !selected);
+        toggleBtn.classList.toggle("btn-ghost", selected);
+      }
+    }
+
+    function handleModalToggleClick() {
+      if (!currentModalCapabilityId) return;
+      toggleSelection(currentModalCapabilityId);
+      updateModalSelectionState();
+    }
+
+    /* -------------------------------------------------------------------------- */
     /* Rendering logic                                                            */
     /* -------------------------------------------------------------------------- */
 
     /**
-     * Spike state: ordered selection IDs only (in-memory, no localStorage).
-     * First selected = first in array; used for Primary vs Supporting labels.
+     * Spike state: selected capability IDs (in-memory, no localStorage).
+     * Order in the array reflects pick history only; no UI or URL semantics
+     * are derived from it — all selections are treated equally.
      */
     var selectedCapabilities = [];
 
@@ -939,11 +1980,17 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
 
     var selectedQuestionResponse = null;
 
-    /** Toggle behavior: re-clicking the active response clears it. */
+    /**
+     * Toggle behavior: re-clicking the active response clears it.
+     * Lives on the intro view, but also drives the Capability Map's
+     * "Recommended" highlights and recommend note. We refresh both surfaces
+     * here so navigating forward always reflects the latest priority.
+     */
     function selectQuestionResponse(responseId) {
       selectedQuestionResponse =
         selectedQuestionResponse === responseId ? null : responseId;
-      renderExploreView();
+      renderGuidedEntry();   // refresh aria-pressed + helper copy
+      renderExploreView();   // pre-apply recommended state to cards
     }
 
     function isCapabilityRecommended(capabilityId) {
@@ -953,25 +2000,23 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
     }
 
     /* -------------------------------------------------------------------------- */
-    /* Stateless parameter preview (mirrors what the QR encodes)                  */
+    /* Technical preview (mirrors what the QR encodes)                            */
+    /* Rendered inside the collapsed <details class="handoff-dev"> on the Focus  */
+    /* Map; kept visually secondary to the Takeaway QR.                          */
     /* -------------------------------------------------------------------------- */
 
     /**
-     * Returns the raw, unencoded primary/supporting capability lists plus the
-     * fully encoded stateless URL — exactly the three things a developer
-     * inspecting the QR payload needs to verify.
+     * Returns the raw caps list plus the fully encoded stateless URL — the
+     * two things a developer inspecting the QR payload needs to verify.
      */
     function buildStatelessPreview() {
-      var primary = selectedCapabilities.slice(0, 2);
-      var supporting = selectedCapabilities.slice(2);
       return {
-        primary: primary.join(","),
-        supporting: supporting.join(","),
+        caps: selectedCapabilities.join(","),
         url: buildStatelessFocusUrl()
       };
     }
 
-    /** Updates the Focus map stateless preview (pre#focus-handoff-pre); no network. */
+    /** Updates the AI Focus Map technical preview (pre#focus-handoff-pre); no network. */
     function refreshStatelessParameterPreview() {
       var pre = document.getElementById("focus-handoff-pre");
       if (!pre) {
@@ -979,35 +2024,125 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
       }
       var preview = buildStatelessPreview();
       pre.textContent =
-        "primary=" + preview.primary + "\n" +
-        "supporting=" + preview.supporting + "\n" +
+        "caps=" + preview.caps + "\n" +
         "url=" + preview.url;
     }
 
     function updateSessionIdDisplays() {
+      // Same muted "Grid Room kiosk · ID" line on both views. The id is
+      // vestigial in the stateless flow but kept as a small kiosk-identity cue.
+      var html =
+        '<span class="session-label">Grid Room kiosk</span> · ' +
+        '<span class="session-id-value">' + sessionId + "</span>";
       var exploreEl = document.getElementById("explore-session-display");
       var focusEl = document.getElementById("focus-session-display");
-      exploreEl.innerHTML = "Session <strong>" + sessionId + "</strong> · unchanged while this page is open";
-      // Focus is now a single muted line — the stateless QR doesn't depend on
-      // the kiosk id, so the giant panel was visually overstating its role.
-      focusEl.innerHTML =
-        '<span class="session-label">Kiosk demo</span> · ' +
-        '<span class="session-id-value">' + sessionId + "</span>";
+      if (exploreEl) exploreEl.innerHTML = html;
+      if (focusEl) focusEl.innerHTML = html;
     }
 
     /**
      * Static catalog for the spike — strategic, aiRMF-inspired groupings.
      * Names are illustrative for this demo, not an official aiRMF taxonomy.
+     * Each entry carries the extra detail surfaced in the capability modal:
+     * whyItMatters, exampleUseCases, implementationNotes.
      */
     var CAPABILITIES = [
-      { id: "operational-efficiency", title: "Operational Efficiency & Automation", description: "Reduce repetitive manual work and streamline common internal processes." },
-      { id: "content-processing",     title: "Content Processing & Summarization", description: "Turn long, complex, or unstructured information into concise, usable summaries." },
-      { id: "workflow-intelligence",  title: "Process Routing & Workflow Intelligence", description: "Classify, route, and prioritize requests so work reaches the right people faster." },
-      { id: "customer-support",       title: "Customer Interaction Support", description: "Support faster, clearer, and more consistent responses during service interactions." },
-      { id: "decision-support",       title: "Decision Support & Insight Generation", description: "Compare options, surface patterns, and support better-informed decisions." },
-      { id: "knowledge-discovery",    title: "Knowledge Discovery & Search", description: "Help users find relevant information across policies, documents, and knowledge sources." },
-      { id: "risk-monitoring",        title: "Risk Monitoring & Compliance Oversight", description: "Identify anomalies, policy concerns, or compliance risks earlier in a workflow." },
-      { id: "governance-support",     title: "Governance & Control Support", description: "Support oversight, traceability, and consistent application of organizational guidance." }
+      {
+        id: "operational-efficiency",
+        title: "Operational Efficiency & Automation",
+        description: "Reduce repetitive manual work and streamline common internal processes.",
+        whyItMatters: "Repetitive work consumes capacity that could be applied to higher-judgment activities. Targeted automation reduces cycle time, improves consistency, and lets staff focus where their experience matters most.",
+        exampleUseCases: [
+          "Auto-populate onboarding forms from uploaded documents",
+          "Generate weekly status reports from project tracking data",
+          "Categorize and pre-triage inbound email or support tickets"
+        ],
+        implementationNotes: "Best applied to well-defined processes with clear inputs and outputs. Pair with human review checkpoints for edge cases and unusual inputs."
+      },
+      {
+        id: "content-processing",
+        title: "Content Processing & Summarization",
+        description: "Turn long, complex, or unstructured information into concise, usable summaries.",
+        whyItMatters: "Knowledge workers spend significant time reading and synthesizing source material. Distilling long documents into structured summaries accelerates decision-making without losing nuance.",
+        exampleUseCases: [
+          "Summarize meeting transcripts into action items and decisions",
+          "Extract key terms from contracts, policies, and SOPs",
+          "Condense long customer feedback threads into themes"
+        ],
+        implementationNotes: "Validate AI summaries against the source whenever accuracy materially affects the decision. Establish summary length and style conventions per audience."
+      },
+      {
+        id: "workflow-intelligence",
+        title: "Process Routing & Workflow Intelligence",
+        description: "Classify, route, and prioritize requests so work reaches the right people faster.",
+        whyItMatters: "Misrouted or low-priority work creates downstream delays and frustrated requesters. Intelligent routing places items in front of the right person at the right time.",
+        exampleUseCases: [
+          "Route incoming service tickets to the appropriate team",
+          "Flag time-sensitive requests for immediate attention",
+          "Direct vendor invoices to the correct approver based on category"
+        ],
+        implementationNotes: "Define routing rules and exception paths before automating. Monitor edge cases and provide easy manual override for ambiguous items."
+      },
+      {
+        id: "customer-support",
+        title: "Customer Interaction Support",
+        description: "Support faster, clearer, and more consistent responses during service interactions.",
+        whyItMatters: "Customers value fast, accurate, and consistent responses. AI-assisted drafting and knowledge retrieval help agents handle a broader range of inquiries with confidence.",
+        exampleUseCases: [
+          "Suggest reply drafts inside the support chat console",
+          "Surface relevant knowledge articles during a live call",
+          "Translate inbound messages in near real time"
+        ],
+        implementationNotes: "Keep a human agent in the loop for sensitive or high-stakes interactions. Periodically audit suggested responses for tone, accuracy, and brand alignment."
+      },
+      {
+        id: "decision-support",
+        title: "Decision Support & Insight Generation",
+        description: "Compare options, surface patterns, and support better-informed decisions.",
+        whyItMatters: "Many decisions hinge on synthesizing data spread across systems. Surfacing comparisons, trends, and outliers helps leaders act with greater confidence and speed.",
+        exampleUseCases: [
+          "Compare vendor proposals across cost, terms, and risk",
+          "Identify trends in operational KPIs over time",
+          "Highlight outliers worth investigating in financial reports"
+        ],
+        implementationNotes: "Pair AI-generated insights with the underlying data so reviewers can verify reasoning. Avoid presenting AI output as the sole basis for high-stakes decisions."
+      },
+      {
+        id: "knowledge-discovery",
+        title: "Knowledge Discovery & Search",
+        description: "Help users find relevant information across policies, documents, and knowledge sources.",
+        whyItMatters: "Institutional knowledge is fragmented across documents, wikis, and inboxes. Semantic search lets users ask questions in natural language and get answers grounded in the right sources.",
+        exampleUseCases: [
+          "Find the current version of a policy across SharePoint, Confluence, and email",
+          "Look up internal guidance on a specific operational scenario",
+          "Surface past projects with similar requirements or constraints"
+        ],
+        implementationNotes: "Source citations are critical for trust. Establish a refresh cadence so retrieved content stays accurate as policies evolve."
+      },
+      {
+        id: "risk-monitoring",
+        title: "Risk Monitoring & Compliance Oversight",
+        description: "Identify anomalies, policy concerns, or compliance risks earlier in a workflow.",
+        whyItMatters: "Catching anomalies and compliance gaps earlier reduces remediation cost and regulatory exposure. AI can scan more activity than any human team can review.",
+        exampleUseCases: [
+          "Flag unusual transaction patterns for human review",
+          "Detect missing approvals or out-of-sequence steps in procurement",
+          "Identify potentially out-of-policy expense reports"
+        ],
+        implementationNotes: "Calibrate sensitivity to balance false positives against missed risks. Pair monitoring with clear escalation paths to risk and compliance owners."
+      },
+      {
+        id: "governance-support",
+        title: "Governance & Control Support",
+        description: "Support oversight, traceability, and consistent application of organizational guidance.",
+        whyItMatters: "Consistent application of policy is hard at scale, especially as guidance evolves. AI helps maintain traceability, document decisions, and surface gaps between intent and practice.",
+        exampleUseCases: [
+          "Track which policy version governed a given decision",
+          "Audit recent decisions against current standards",
+          "Document rationale for exceptions, escalations, or overrides"
+        ],
+        implementationNotes: "Make decision logs reviewable by oversight bodies. Be explicit about what the AI did versus what humans approved."
+      }
     ];
 
     function capabilityById(id) {
@@ -1022,23 +2157,21 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
     }
 
     /**
-     * Toggle selection: append on select, remove on deselect; order preserved for primary logic.
-     * Emits a toast so users with the header scrolled out of view still get
-     * confirmation of what changed.
+     * Toggle selection: append on select, remove on deselect. Selection has
+     * no ordering semantics — every starred capability is treated equally.
+     *
+     * No toast: the immediate visual feedback already lives where the
+     * visitor's eye is (star button fills, card border highlights, hint
+     * flips, footer count updates, View AI Focus Map enables). The toast
+     * queue is reserved for actions without that built-in feedback —
+     * Clear confirmation, idle warning, and copy-failure messages.
      */
     function toggleSelection(capabilityId) {
-      var cap = capabilityById(capabilityId);
       var idx = selectedCapabilities.indexOf(capabilityId);
       if (idx === -1) {
         selectedCapabilities.push(capabilityId);
-        if (cap) {
-          var newOrder = selectedCapabilities.length;
-          var roleLabel = newOrder <= 2 ? "primary" : "supporting";
-          showToast("Added: " + cap.title + " (#" + newOrder + ", " + roleLabel + ")");
-        }
       } else {
         selectedCapabilities.splice(idx, 1);
-        if (cap) showToast("Removed: " + cap.title);
       }
       renderExploreView();
       refreshStatelessParameterPreview();
@@ -1048,73 +2181,205 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
       }
     }
 
-    /** Show one main panel; others hidden (no router, no history API). */
-    function showView(viewName) {
-      var explore = document.getElementById("view-explore");
-      var focus = document.getElementById("view-focus");
-      if (viewName === "explore") {
-        explore.classList.add("is-active");
-        explore.setAttribute("aria-hidden", "false");
-        focus.classList.remove("is-active");
-        focus.setAttribute("aria-hidden", "true");
-        renderExploreView();
-      } else if (viewName === "focus") {
-        focus.classList.add("is-active");
-        focus.setAttribute("aria-hidden", "false");
-        explore.classList.remove("is-active");
-        explore.setAttribute("aria-hidden", "true");
-        renderFocusMapView();
+    /**
+     * Exit the aiRMF experience and return to the Touchscreen Entry Page.
+     * The entry page represents the Intuiface launcher, so leaving the
+     * experience is treated as ending it: every in-memory selection,
+     * viewed flag, focus-area answer, and rendered surface is reset so
+     * the next visitor starts fresh.
+     */
+    function resetExperienceState() {
+      selectedCapabilities = [];
+      selectedQuestionResponse = null;
+      viewedCapabilities = {};
+      // Tear down transient UI: any armed clear-confirm, any armed
+      // exit-confirm, an open modal, and any queued toast messages from
+      // the previous visitor.
+      resetClearArmState();
+      resetExitArmState();
+      closeCapabilityModal();
+      toastQueue.length = 0;
+      // Re-render dependent surfaces so hidden DOM is also coherent on
+      // re-entry (cards unstarred, recommend note hidden, QR back to base URL).
+      renderAirmfIntroView();
+      renderExploreView();
+      refreshStatelessParameterPreview();
+      refreshFocusQrDisplay();
+    }
+
+    /* -------------------------------------------------------------------------- */
+    /* Exit Experience two-tap confirm                                            */
+    /* Mirrors the Clear-selections pattern: first tap arms the button, second   */
+    /* tap within EXIT_ARM_MS triggers the exit. Reuses the existing             */
+    /* .btn-clear.is-armed styling so no new vocabulary is introduced.           */
+    /* -------------------------------------------------------------------------- */
+
+    var EXIT_ARM_MS = 3000;
+    var exitArmed = false;
+    var exitArmTimer = null;
+    var exitArmedButtonId = null;
+
+    function resetExitArmState() {
+      exitArmed = false;
+      if (exitArmTimer) {
+        clearTimeout(exitArmTimer);
+        exitArmTimer = null;
+      }
+      if (exitArmedButtonId) {
+        var btn = document.getElementById(exitArmedButtonId);
+        if (btn) {
+          btn.textContent = "Exit Experience";
+          btn.classList.remove("is-armed");
+        }
+        exitArmedButtonId = null;
       }
     }
 
+    /** Click handler for the two Exit Experience buttons (intro + focus map).
+     *  First tap arms the button; second tap calls handleExitExperience(). */
+    function handleExitButtonClick(event) {
+      var btn = event && event.currentTarget;
+      if (!exitArmed) {
+        exitArmed = true;
+        if (btn) {
+          exitArmedButtonId = btn.id;
+          btn.textContent = "Tap again to exit";
+          btn.classList.add("is-armed");
+        }
+        exitArmTimer = setTimeout(resetExitArmState, EXIT_ARM_MS);
+        return;
+      }
+      handleExitExperience();
+    }
+
+    /* -------------------------------------------------------------------------- */
+    /* Idle auto-reset                                                            */
+    /* Critical for an unattended kiosk: if the visitor walks away, return to     */
+    /* the Touchscreen Entry Page after IDLE_MS so the next person never inherits */
+    /* a previous session's selections or an open modal. Activity (pointerdown,   */
+    /* keydown) anywhere on the document re-arms the timer. Only runs while       */
+    /* inside the aiRMF experience — armed/disarmed by showView().                */
+    /* -------------------------------------------------------------------------- */
+
+    var IDLE_MS = 90000;
+    var IDLE_WARN_LEAD_MS = 12000; // toast appears this long before exit
+    var idleTimer = null;
+    var idleWarnTimer = null;
+    var idleArmed = false;
+
+    function disarmIdleTimer() {
+      if (idleTimer) { clearTimeout(idleTimer); idleTimer = null; }
+      if (idleWarnTimer) { clearTimeout(idleWarnTimer); idleWarnTimer = null; }
+      idleArmed = false;
+    }
+
+    function armIdleTimer() {
+      disarmIdleTimer();
+      idleArmed = true;
+      idleWarnTimer = setTimeout(function () {
+        showToast("Returning to start menu in 12 seconds — tap to stay.");
+      }, IDLE_MS - IDLE_WARN_LEAD_MS);
+      idleTimer = setTimeout(handleExitExperience, IDLE_MS);
+    }
+
+    /** Reset the idle countdown on any user activity, but only while the
+     *  visitor is inside aiRMF (idleArmed). Listening on the document means
+     *  taps on cards, the modal, sticky footer, etc. all count. */
+    function handleIdleActivity() {
+      if (idleArmed) armIdleTimer();
+    }
+
+    function handleExitExperience() {
+      resetExperienceState();
+      showView("home");
+    }
+
     /**
-     * Reflects current selection count on the header CTAs:
-     *  - "View focus map" gets a live count and is disabled when 0 selected.
-     *  - "Clear selections" is hidden when 0, visible otherwise; any change
-     *    to the count also defuses an armed clear so stale confirmations
+     * Show one main panel; all others hidden. No router, no history API.
+     * Supported viewName values: "home" | "airmf" | "explore" | "focus".
+     *
+     * Side effects:
+     *  - Defuses any armed Exit confirmation so it doesn't survive a context
+     *    switch and accidentally exit on a single tap later.
+     *  - Arms/disarms the idle auto-reset timer so it only runs inside the
+     *    aiRMF experience, not on the Touchscreen Entry Page.
+     */
+    function showView(viewName) {
+      resetExitArmState();
+      var views = {
+        home: document.getElementById("view-home"),
+        airmf: document.getElementById("view-airmf-intro"),
+        explore: document.getElementById("view-explore"),
+        focus: document.getElementById("view-focus")
+      };
+      Object.keys(views).forEach(function (key) {
+        var el = views[key];
+        if (!el) return;
+        var active = key === viewName;
+        el.classList.toggle("is-active", active);
+        el.setAttribute("aria-hidden", active ? "false" : "true");
+      });
+      // Re-render the destination so its content reflects the latest state.
+      if (viewName === "explore") renderExploreView();
+      else if (viewName === "focus") renderFocusMapView();
+      else if (viewName === "airmf") renderAirmfIntroView();
+      // Idle reset only matters inside the aiRMF experience; the entry page
+      // is the launcher itself, so there's nothing to time out to.
+      if (viewName === "home") disarmIdleTimer();
+      else armIdleTimer();
+    }
+
+    /**
+     * Reflects current selection count on the Capability Map's CTAs:
+     *  - Both "View AI Focus Map" buttons (header + sticky footer) get a
+     *    live count and are disabled when 0 selected.
+     *  - Both "Clear selections" buttons are hidden at 0, visible otherwise.
+     *  - The sticky footer status line summarizes the count for visitors.
+     *  - Any count change defuses an armed clear so stale confirmations
      *    can't fire against new selections.
      */
     function updateFocusButtonState() {
-      var focusBtn = document.getElementById("btn-to-focus");
-      var clearBtn = document.getElementById("btn-clear-selections");
       var n = selectedCapabilities.length;
-      if (focusBtn) {
-        focusBtn.textContent = n > 0 ? "View focus map (" + n + ")" : "View focus map";
-        focusBtn.disabled = n === 0;
-        focusBtn.setAttribute("aria-disabled", n === 0 ? "true" : "false");
-        focusBtn.title = n === 0 ? "Star at least one capability to view the focus map." : "";
-      }
-      if (clearBtn) {
-        clearBtn.hidden = n === 0;
-        if (clearArmed) resetClearArmState();
+      [
+        document.getElementById("btn-to-focus"),
+        document.getElementById("btn-to-focus-footer")
+      ].forEach(function (btn) {
+        if (!btn) return;
+        btn.textContent = n > 0 ? "View AI Focus Map (" + n + ")" : "View AI Focus Map";
+        btn.disabled = n === 0;
+        btn.setAttribute("aria-disabled", n === 0 ? "true" : "false");
+        btn.title = n === 0 ? "Star at least one capability to view the AI Focus Map." : "";
+      });
+      getClearButtons().forEach(function (btn) {
+        btn.hidden = n === 0;
+      });
+      if (clearArmed) resetClearArmState();
+      var status = document.getElementById("capability-map-footer-status");
+      if (status) {
+        status.textContent = n === 0
+          ? "No capabilities selected"
+          : n + (n === 1 ? " capability" : " capabilities") + " selected";
       }
     }
 
-    /**
-     * Swaps the heading + lede above the card grid so the section's purpose
-     * matches the current state: refining recommendations after a response,
-     * or a neutral "explore everything" prompt when nothing is picked yet.
-     */
-    function renderGridIntro() {
-      var headingEl = document.getElementById("grid-intro-heading");
-      var ledeEl = document.getElementById("grid-intro-lede");
-      if (!headingEl || !ledeEl) return;
-      if (selectedQuestionResponse) {
-        headingEl.textContent = "Recommended capabilities";
-        ledeEl.textContent =
-          "Based on your answer. You can add or remove selections at any time.";
-      } else {
-        headingEl.textContent = "Explore capabilities";
-        ledeEl.textContent =
-          "Answer the question above to highlight a recommended starting point, or select capabilities manually.";
-      }
+    /** Populate the intro view's guided question. The Continue CTA is always
+     *  enabled — selecting a focus area is optional and only changes whether
+     *  the Capability Map shows Recommended highlights. */
+    function renderAirmfIntroView() {
+      renderGuidedEntry();
     }
 
     function renderGuidedEntry() {
       var host = document.getElementById("guided-entry-host");
       if (!host) return;
+      // Helper is always visible; copy swaps to reflect optional-vs-selected
+      // state so the visitor knows the question can be skipped.
       var helper = document.getElementById("guided-entry-helper");
-      if (helper) helper.hidden = !selectedQuestionResponse;
+      if (helper) {
+        helper.textContent = selectedQuestionResponse
+          ? "Based on your priority, we’ve highlighted capabilities that may help achieve that outcome. You can refine your selections at any time."
+          : "Optional: choose a focus area to highlight related capabilities.";
+      }
       host.innerHTML = "";
       for (var i = 0; i < QUESTION_RESPONSES.length; i++) {
         var response = QUESTION_RESPONSES[i];
@@ -1133,78 +2398,104 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
       }
     }
 
+    /**
+     * Build a single capability card. The card itself is the primary
+     * interactive surface (click / Enter / Space opens the detail modal);
+     * the star button inside stops propagation so it only toggles selection.
+     */
+    function buildExploreCard(cap) {
+      var selected = isSelected(cap.id);
+      var recommended = isCapabilityRecommended(cap.id);
+      var viewed = isCapabilityViewed(cap.id);
+
+      var card = document.createElement("article");
+      card.className =
+        "cap-card" +
+        (selected ? " is-selected" : "") +
+        (recommended ? " is-recommended" : "") +
+        (viewed ? " is-viewed" : "");
+      card.dataset.capabilityId = cap.id;
+      card.setAttribute("role", "button");
+      card.setAttribute("tabindex", "0");
+      card.setAttribute("aria-label", cap.title + ". Open capability details.");
+
+      if (recommended || viewed) {
+        var badges = document.createElement("div");
+        badges.className = "cap-card-badges";
+        if (recommended) {
+          var rec = document.createElement("span");
+          rec.className = "cap-recommend-label";
+          rec.textContent = "Recommended";
+          badges.appendChild(rec);
+        }
+        if (viewed) {
+          var vw = document.createElement("span");
+          vw.className = "cap-viewed-label";
+          vw.textContent = "Viewed";
+          badges.appendChild(vw);
+        }
+        card.appendChild(badges);
+      }
+
+      var h2 = document.createElement("h2");
+      h2.textContent = cap.title;
+      card.appendChild(h2);
+
+      var p = document.createElement("p");
+      p.textContent = cap.description;
+      card.appendChild(p);
+
+      var footer = document.createElement("div");
+      footer.className = "cap-card-footer";
+
+      var hint = document.createElement("span");
+      hint.className = "hint";
+      hint.textContent = selected ? "Selected" : "Not selected";
+      footer.appendChild(hint);
+
+      var star = document.createElement("button");
+      star.type = "button";
+      star.className = "btn btn-star";
+      star.setAttribute("aria-pressed", selected ? "true" : "false");
+      star.setAttribute(
+        "aria-label",
+        (selected ? "Remove " : "Select ") + cap.title
+      );
+      star.textContent = "★";
+      // stopPropagation: clicking the star must never open the modal.
+      star.addEventListener("click", function (e) {
+        e.stopPropagation();
+        toggleSelection(cap.id);
+      });
+      footer.appendChild(star);
+
+      card.appendChild(footer);
+
+      card.addEventListener("click", function () {
+        openCapabilityModal(cap.id);
+      });
+      // Only treat keyboard activation on the card itself; the star handles
+      // its own Enter/Space as a native button.
+      card.addEventListener("keydown", function (e) {
+        if (e.target !== card) return;
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          openCapabilityModal(cap.id);
+        }
+      });
+
+      return card;
+    }
+
     function renderExploreView() {
-      renderGuidedEntry();
-      renderGridIntro();
       updateFocusButtonState();
+      // The recommend note only makes sense once a priority has been chosen.
+      var note = document.getElementById("map-recommend-note");
+      if (note) note.hidden = !selectedQuestionResponse;
       var host = document.getElementById("explore-card-host");
       host.innerHTML = "";
       for (var i = 0; i < CAPABILITIES.length; i++) {
-        var cap = CAPABILITIES[i];
-        var selected = isSelected(cap.id);
-        var recommended = isCapabilityRecommended(cap.id);
-        var order = selected ? selectedCapabilities.indexOf(cap.id) + 1 : 0;
-        var isPrimaryPick = selected && order <= 2;
-        var card = document.createElement("article");
-        card.className =
-          "cap-card" +
-          (selected ? " is-selected" : "") +
-          (recommended ? " is-recommended" : "");
-        card.setAttribute("role", "listitem");
-
-        if (recommended) {
-          var recLabel = document.createElement("span");
-          recLabel.className = "cap-recommend-label";
-          recLabel.textContent = "Recommended";
-          card.appendChild(recLabel);
-        }
-
-        var h2 = document.createElement("h2");
-        h2.textContent = cap.title;
-        card.appendChild(h2);
-
-        var p = document.createElement("p");
-        p.textContent = cap.description;
-        card.appendChild(p);
-
-        var footer = document.createElement("div");
-        footer.className = "cap-card-footer";
-
-        var hint = document.createElement("span");
-        hint.className = "hint";
-        hint.textContent = selected
-          ? (isPrimaryPick ? "Selected · Primary " : "Selected · Supporting ") + order
-          : "Not selected";
-        footer.appendChild(hint);
-
-        var star = document.createElement("button");
-        star.type = "button";
-        star.className = "btn btn-star";
-        star.setAttribute(
-          "aria-label",
-          selected
-            ? "Remove " + cap.title + ", currently selection " + order + " of " + selectedCapabilities.length
-            : "Select " + cap.title
-        );
-        star.setAttribute("aria-pressed", selected ? "true" : "false");
-        star.textContent = "★";
-        if (selected) {
-          var orderBadge = document.createElement("span");
-          orderBadge.className =
-            "star-order-badge " + (isPrimaryPick ? "is-primary" : "is-supporting");
-          orderBadge.textContent = String(order);
-          orderBadge.setAttribute("aria-hidden", "true");
-          star.appendChild(orderBadge);
-        }
-        star.addEventListener("click", function (id) {
-          return function () {
-            toggleSelection(id);
-          };
-        }(cap.id));
-
-        footer.appendChild(star);
-        card.appendChild(footer);
-        host.appendChild(card);
+        host.appendChild(buildExploreCard(CAPABILITIES[i]));
       }
     }
 
@@ -1212,19 +2503,23 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
       var host = document.getElementById("focus-content-host");
       host.innerHTML = "";
 
+      // The page lede frames the Starred Capabilities list; hide it when the
+      // list is empty so the empty-state message stands on its own.
+      var pageLede = document.getElementById("focus-page-lede");
+      if (pageLede) pageLede.hidden = selectedCapabilities.length === 0;
+
       if (selectedCapabilities.length === 0) {
         var empty = document.createElement("div");
         empty.className = "empty-state";
         empty.innerHTML =
           "<strong>No capabilities selected yet</strong> " +
-          "Go back to explore and tap the stars on the cards you care about. " +
-          "Your first two selections will show as Primary on this map.";
+          "Return to the Capability Map and star the capabilities you want to carry forward.";
         host.appendChild(empty);
       } else {
-        var lede = document.createElement("p");
-        lede.className = "focus-list-lede";
-        lede.textContent = "Your focus areas based on your guided priorities";
-        host.appendChild(lede);
+        var heading = document.createElement("h2");
+        heading.className = "focus-section-heading";
+        heading.textContent = "Starred Capabilities";
+        host.appendChild(heading);
 
         var ul = document.createElement("ul");
         ul.className = "focus-list";
@@ -1236,11 +2531,6 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
 
           var li = document.createElement("li");
           li.className = "focus-item";
-
-          var badge = document.createElement("span");
-          badge.className = "badge " + (i < 2 ? "badge-primary" : "badge-supporting");
-          badge.textContent = i < 2 ? "Primary" : "Supporting";
-          li.appendChild(badge);
 
           var h3 = document.createElement("h3");
           h3.textContent = cap.title;
@@ -1260,21 +2550,80 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
       refreshFocusQrDisplay();
     }
 
-    document.getElementById("btn-to-focus").addEventListener("click", function () {
-      if (selectedCapabilities.length === 0) return;
-      showView("focus");
+    // Grid Room Home → aiRMF Intro (only the active experience card is wired).
+    document.getElementById("btn-experience-airmf").addEventListener("click", function () {
+      showView("airmf");
     });
 
+    // aiRMF Intro → Capability Map. Always allowed; focus-area selection is
+    // optional and only affects whether recommendations are highlighted.
+    document.getElementById("btn-to-explore").addEventListener("click", function () {
+      showView("explore");
+    });
+
+    // "View AI Focus Map" — same behavior for the header CTA and the sticky
+    // footer twin; both share this guarded handler.
+    function handleViewFocusClick() {
+      if (selectedCapabilities.length === 0) return;
+      showView("focus");
+    }
+    document.getElementById("btn-to-focus").addEventListener("click", handleViewFocusClick);
+    document.getElementById("btn-to-focus-footer").addEventListener("click", handleViewFocusClick);
+
+    // Capability Map → aiRMF Intro.
+    document.getElementById("btn-back-to-intro").addEventListener("click", function () {
+      showView("airmf");
+    });
+
+    // Focus Map → Capability Map.
     document.getElementById("btn-back-explore").addEventListener("click", function () {
       showView("explore");
     });
 
+    // "Exit Experience" on intro + focus views: two-tap confirm to prevent
+    // accidental loss of selections. Second tap (within EXIT_ARM_MS) ends
+    // the aiRMF runtime, resets all in-memory state, then returns to entry.
+    document.getElementById("btn-intro-home").addEventListener("click", handleExitButtonClick);
+    document.getElementById("btn-focus-home").addEventListener("click", handleExitButtonClick);
+
+    // Activity-driven idle reset: any tap or key press anywhere on the
+    // document re-arms the inactivity countdown while inside aiRMF.
+    document.addEventListener("pointerdown", handleIdleActivity, { passive: true });
+    document.addEventListener("keydown", handleIdleActivity);
+
     document.getElementById("btn-copy-url").addEventListener("click", copyStatelessUrlToClipboard);
 
+    // Both Clear buttons (header + sticky footer twin) share the two-tap
+    // confirm handler; their armed text and styling stay in sync via
+    // getClearButtons() inside the handler.
     document.getElementById("btn-clear-selections").addEventListener("click", handleClearSelectionsClick);
+    document.getElementById("btn-clear-selections-footer").addEventListener("click", handleClearSelectionsClick);
+
+    // Capability modal: close button, in-modal select/deselect, prev/next
+    // pager, click-outside, Tab focus trap, and Escape (only when open).
+    document.getElementById("modal-close-btn").addEventListener("click", closeCapabilityModal);
+    document.getElementById("modal-toggle-btn").addEventListener("click", handleModalToggleClick);
+    document.getElementById("modal-prev-btn").addEventListener("click", function () { navigateModal(-1); });
+    document.getElementById("modal-next-btn").addEventListener("click", function () { navigateModal(1); });
+    document.getElementById("capability-modal").addEventListener("keydown", handleModalKeydown);
+    document.getElementById("capability-modal").addEventListener("click", function (e) {
+      if (e.target === e.currentTarget) {
+        closeCapabilityModal();
+      }
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key !== "Escape") return;
+      var overlay = document.getElementById("capability-modal");
+      if (overlay && !overlay.hidden) {
+        closeCapabilityModal();
+      }
+    });
 
     updateSessionIdDisplays();
     refreshFocusQrDisplay();
+    // Populate both interactive views up front so they're ready in hidden DOM:
+    // the intro's question buttons + CTA, and the map's card grid.
+    renderAirmfIntroView();
     renderExploreView();
     refreshStatelessParameterPreview();
   </script>
