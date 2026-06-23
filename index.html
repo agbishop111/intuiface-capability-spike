@@ -3,8 +3,26 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Capability Spike — Explore & Focus</title>
+  <title>aiRMF Grid Room — Explore & Focus</title>
   <style>
+    /* Typography: Open Sans (UI/body) + STIX Two Text (headings). Bundled
+       woff2 for offline / file:// kiosk use — no CDN dependency at runtime. */
+    @font-face {
+      font-family: "Open Sans";
+      src: url("fonts/open-sans.woff2") format("woff2");
+      font-weight: 400 700;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: "STIX Two Text";
+      src: url("fonts/stix-two-text.woff2") format("woff2");
+      font-weight: 400 700;
+      font-style: normal;
+      font-display: swap;
+    }
+
     /* --- Base: kiosk-friendly typography and touch targets --- */
     *,
     *::before,
@@ -19,20 +37,54 @@
        prototype. */
     html {
       font-size: 22px;
+      font-family: var(--font-sans);
       -webkit-tap-highlight-color: transparent;
     }
 
     body {
       margin: 0;
       min-height: 100vh;
-      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, sans-serif;
+      font-family: var(--font-sans);
       background: #0f1419;
       color: #e8ecf1;
       line-height: 1.45;
-      /* Permissive page-level scroll as a POC fallback: on the 3840×2160
-         kiosk target nothing overflows, so no scrollbars appear. On smaller
-         dev/demo viewports content gracefully scrolls instead of clipping. */
       overflow: auto;
+    }
+
+    /* STIX Two Text — primary headings and capability titles */
+    h1,
+    h2,
+    h3,
+    .app-header h1,
+    .modal-title,
+    .preview-title,
+    .wheel-target-label,
+    .experience-card-title,
+    .focus-section-heading,
+    .intro-section-heading,
+    .intro-support-heading,
+    .intro-actions-label,
+    .guided-entry-heading,
+    .focus-item h3,
+    .intro-path-card-text strong,
+    .empty-state strong {
+      font-family: var(--font-serif);
+    }
+
+    /* aiRMF concept palette */
+    :root {
+      --font-sans: "Open Sans", sans-serif;
+      --font-serif: "STIX Two Text", serif;
+      --airmf-navy: #0f2744;
+      --airmf-foundations: #7cb342;
+      --airmf-foundations-soft: #e8f5d6;
+      --airmf-development: #26a69a;
+      --airmf-development-soft: #d9f3f0;
+      --airmf-adoption: #42a5f5;
+      --airmf-adoption-soft: #dceefb;
+      --airmf-accent: #8bc34a;
+      --airmf-surface-light: #eceef1;
+      --airmf-panel: #ffffff;
     }
 
     /* Each view is a full-screen flex column: header (top), body (flex: 1),
@@ -177,23 +229,32 @@
       color: #fbbf24;
     }
 
-    /* Persistent prototype disclaimer — one element, fixed bottom-right of
-       the screen, deliberately small so it stays visible without competing
-       with page content. Replaces the per-view duplicates that previously
-       reserved vertical space on every screen. */
+    /* Persistent prototype disclaimer — fixed top-right, out of the way of
+       footer actions. One element shown across every view. */
     .spike-disclaimer {
       position: fixed;
-      right: 0.7rem;
-      bottom: 0.45rem;
+      top: clamp(0.4rem, 0.75vh, 0.55rem);
+      right: clamp(0.55rem, 1.1vw, 0.85rem);
+      bottom: auto;
       margin: 0;
       padding: 0.15rem 0.45rem;
-      font-size: 0.6rem;
+      font-size: clamp(0.52rem, 0.8vh, 0.6rem);
       font-weight: 400;
       line-height: 1.2;
-      color: #475569;
+      color: #64748b;
       letter-spacing: 0.05em;
       pointer-events: none;
-      z-index: 1;
+      z-index: 5;
+    }
+
+    #view-home.is-active ~ .spike-disclaimer,
+    #view-focus.is-active ~ .spike-disclaimer {
+      color: #94a3b8;
+    }
+
+    #view-airmf-intro.is-active ~ .spike-disclaimer,
+    #view-explore.is-active ~ .spike-disclaimer {
+      color: #64748b;
     }
 
     /* Page subtitle: optional secondary title under a view's h1, sits flush
@@ -213,7 +274,7 @@
       gap: 0.4rem;
       min-height: 3rem;
       padding: 0 1.25rem;
-      font: inherit;
+      font-family: var(--font-sans);
       font-weight: 600;
       font-size: 1rem;
       border: none;
@@ -247,6 +308,27 @@
       background: #334155;
     }
 
+    /* Ghost buttons on light-surface views — white/light fill with dark labels. */
+    #view-airmf-intro .btn-ghost,
+    #view-explore .btn-ghost {
+      background: var(--airmf-panel);
+      color: var(--airmf-navy);
+      border: 1px solid #cbd5e1;
+    }
+
+    #view-airmf-intro .btn-ghost:active,
+    #view-explore .btn-ghost:active {
+      background: #f1f5f9;
+      color: var(--airmf-navy);
+    }
+
+    #view-airmf-intro .btn-clear.is-armed,
+    #view-explore .btn-clear.is-armed {
+      background: #422006;
+      border-color: #f59e0b;
+      color: #fbbf24;
+    }
+
     .btn-star {
       position: relative;
       min-width: 3rem;
@@ -266,31 +348,34 @@
       border-color: #f59e0b;
     }
 
-    /* Intro: guided entry question — visually distinct callout that lives
-       alongside the "How to use" steps in a two-column body. Tinted +
-       accent-bordered so it reads as a primary action zone. */
+    /* Intro: guided entry — used inside the Guided Experience overlay. */
     .guided-entry {
       position: relative;
       margin: 0;
-      padding: 1.4rem 1.5rem 1.5rem;
-      background:
-        linear-gradient(155deg, #16243e 0%, #172238 60%, #16213a 100%);
-      border: 1px solid #334d80;
-      border-radius: 1rem;
-      box-shadow:
-        inset 0 1px 0 rgba(147, 197, 253, 0.08),
-        0 8px 24px -16px rgba(59, 130, 246, 0.45);
+      padding: 0;
+      background: transparent;
+      border: none;
+      border-radius: 0;
+      box-shadow: none;
       display: flex;
       flex-direction: column;
-      gap: 0.7rem;
+      gap: 1rem;
     }
 
     .guided-entry-heading {
       margin: 0;
-      font-size: 1.2rem;
+      font-size: 1.65rem;
+      font-weight: 700;
+      color: var(--airmf-navy);
+      line-height: 1.25;
+      letter-spacing: -0.02em;
+    }
+
+    .guided-entry-sub {
+      margin: 0;
+      font-size: 1rem;
       font-weight: 650;
-      color: #f1f5f9;
-      line-height: 1.35;
+      color: #334155;
     }
 
     .guided-entry-helper {
@@ -302,49 +387,86 @@
 
     .guided-entry-buttons {
       display: grid;
-      gap: 0.55rem;
+      gap: 0.7rem;
       grid-template-columns: 1fr;
     }
 
-    @media (min-width: 1200px) {
-      .guided-entry-buttons {
-        grid-template-columns: 1fr 1fr;
-      }
-    }
-
     .btn-response {
-      display: inline-flex;
-      align-items: center;
-      justify-content: flex-start;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: center;
       text-align: left;
-      min-height: 3.4rem;
-      padding: 0.7rem 1.05rem;
-      font: inherit;
-      font-size: 1rem;
-      font-weight: 500;
-      color: #cbd5e1;
-      background: #0f1a2b;
-      border: 1px solid #334155;
-      border-radius: 0.7rem;
+      gap: 0.35rem;
+      min-height: 4.5rem;
+      padding: 0.85rem 1.1rem;
+      font-family: var(--font-sans);
+      background: #f1f5f9;
+      border: 2px solid #e2e8f0;
+      border-radius: 0.55rem;
       cursor: pointer;
       touch-action: manipulation;
-      line-height: 1.3;
+    }
+
+    .btn-response-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--airmf-navy);
+      line-height: 1.25;
+    }
+
+    .btn-response-desc {
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: #475569;
+      line-height: 1.35;
     }
 
     .btn-response:active {
-      background: #1b2a40;
+      transform: scale(0.99);
     }
 
+    .btn-response:nth-child(1) { background: var(--airmf-foundations-soft); border-color: #c5e1a5; }
+    .btn-response:nth-child(2) { background: var(--airmf-development-soft); border-color: #80cbc4; }
+    .btn-response:nth-child(3) { background: var(--airmf-adoption-soft); border-color: #90caf9; }
+    .btn-response:nth-child(4) { background: var(--airmf-foundations-soft); border-color: #c5e1a5; }
+
     .btn-response[aria-pressed="true"] {
-      background: #1e3a5f;
-      border-color: #3b82f6;
-      color: #dbeafe;
+      background: #fff;
+      border-color: var(--airmf-accent);
+      box-shadow: 0 0 0 3px rgba(139, 195, 74, 0.35);
+    }
+
+    .btn-response[aria-pressed="true"] .btn-response-title {
+      color: var(--airmf-navy);
+      font-weight: 700;
+    }
+
+    /* Guided step 2: mute unselected journey cards so the active answer reads clearly. */
+    .guided-overlay[data-guided-step="recommendations"] .btn-response:not([aria-pressed="true"]) {
+      background: #eef1f5;
+      border-color: #dde3ea;
+    }
+
+    .guided-overlay[data-guided-step="recommendations"] .btn-response:not([aria-pressed="true"]) .btn-response-title {
+      color: #94a3b8;
       font-weight: 600;
     }
 
-    /* Capability map: lede now sits in the body's top row (one short line)
-       and the optional recommend note rides directly below as a quiet
-       teal accent when a focus area is active. */
+    .guided-overlay[data-guided-step="recommendations"] .btn-response:not([aria-pressed="true"]) .btn-response-desc {
+      color: #b8c2cc;
+    }
+
+    .guided-overlay[data-guided-step="recommendations"] .btn-response[aria-pressed="true"] {
+      box-shadow: 0 0 0 3px rgba(139, 195, 74, 0.45);
+    }
+
+    .btn-response:focus-visible {
+      outline: 2px solid var(--airmf-navy);
+      outline-offset: 2px;
+    }
+
+    /* Capability map: optional lede above the grid (legacy hook). */
     .map-intro-lede {
       margin: 0;
       color: #cbd5e1;
@@ -352,19 +474,90 @@
       line-height: 1.4;
     }
 
-    .map-recommend-note {
-      margin: 0;
-      color: #5eead4;
-      font-size: 0.85rem;
-      line-height: 1.35;
+    /* Sidebar journey context — shown after guided soft landing; paired with Edit. */
+    .map-journey-context {
+      display: flex;
+      flex-direction: column;
+      gap: clamp(0.28rem, 0.5vh, 0.4rem);
+      padding: clamp(0.5rem, 0.9vh, 0.65rem) 0.6rem;
+      background: #f8fafc;
+      border: 1px solid #d1d5db;
+      border-left: 4px solid var(--airmf-foundations);
+      border-radius: 0.35rem;
+      flex-shrink: 0;
     }
 
-    .map-recommend-note[hidden] {
+    .map-journey-context[hidden] {
       display: none;
     }
 
-    /* Wraps the map's lede + optional recommend note in a single compact
-       block so they don't each consume a separate row. */
+    .map-journey-context-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+
+    .map-journey-context-eyebrow {
+      font-size: clamp(0.62rem, 0.95vh, 0.72rem);
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #64748b;
+    }
+
+    .btn-journey-edit {
+      flex-shrink: 0;
+      min-height: 2rem;
+      padding: 0 0.65rem;
+      font-family: var(--font-sans);
+      font-size: clamp(0.68rem, 1vh, 0.76rem);
+      font-weight: 650;
+      color: var(--airmf-navy);
+      background: var(--airmf-panel);
+      border: 1px solid #94a3b8;
+      border-radius: 0.3rem;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    .btn-journey-edit:active {
+      background: #f1f5f9;
+    }
+
+    .btn-journey-edit:focus-visible {
+      outline: 2px solid var(--airmf-foundations);
+      outline-offset: 2px;
+    }
+
+    .map-journey-context-value {
+      margin: 0;
+      font-family: var(--font-serif);
+      font-size: clamp(0.82rem, 1.25vh, 0.92rem);
+      font-weight: 700;
+      color: var(--airmf-navy);
+      line-height: 1.25;
+    }
+
+    .map-journey-context-hint {
+      margin: 0;
+      font-size: clamp(0.64rem, 0.98vh, 0.72rem);
+      line-height: 1.35;
+      color: #64748b;
+    }
+
+    .explore-sidebar-filters-heading {
+      margin: clamp(0.35rem, 0.65vh, 0.5rem) 0 0;
+      font-family: var(--font-serif);
+      font-size: clamp(0.72rem, 1.1vh, 0.82rem);
+      font-weight: 700;
+      color: #64748b;
+      line-height: 1.2;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    /* Wraps the map's lede in a single compact block. */
     .map-intro-block {
       display: flex;
       align-items: baseline;
@@ -409,7 +602,7 @@
       border: 2px solid #2a3441;
       color: #e8ecf1;
       text-align: left;
-      font: inherit;
+      font-family: var(--font-sans);
       cursor: pointer;
       touch-action: manipulation;
       transition: border-color 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
@@ -462,198 +655,900 @@
       border: 1px solid #334155;
     }
 
-    /* aiRMF Intro: two-column body — steps on the left, guided question
-       callout on the right — so the orientation content fits one screen
-       and the primary CTA lives in the bottom footer. */
+    /* aiRMF Intro: light two-column layout — about left, pathways right. */
+    #view-airmf-intro {
+      background: var(--airmf-surface-light);
+      color: var(--airmf-navy);
+      overflow: hidden;
+      --intro-pad-block: clamp(0.55rem, 1.1vh, 0.85rem);
+      --intro-pad-inline: clamp(1.1rem, 2vw, 1.65rem);
+      --intro-gap: clamp(0.3rem, 0.65vh, 0.5rem);
+    }
+
+    #view-airmf-intro .app-header {
+      background: var(--airmf-surface-light);
+      border-bottom: 1px solid #d1d5db;
+      padding: var(--intro-pad-block) var(--intro-pad-inline);
+      flex-shrink: 0;
+    }
+
+    #view-airmf-intro .app-header h1 {
+      color: var(--airmf-navy);
+      font-size: clamp(1.2rem, 2vh, 1.75rem);
+      line-height: 1.15;
+    }
+
+    #view-airmf-intro .page-subtitle {
+      color: #64748b;
+    }
+
+    #view-airmf-intro .view-footer {
+      background: var(--airmf-surface-light);
+      border-top: 1px solid #d1d5db;
+      flex-shrink: 0;
+      padding: 0.5rem var(--intro-pad-inline) 0.55rem;
+    }
+
+    #view-airmf-intro .view-body {
+      overflow: hidden;
+      padding: 0;
+      flex: 1 1 auto;
+      min-height: 0;
+    }
+
     .intro-body {
-      gap: 1.4rem;
+      gap: 0;
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .intro-columns {
+      height: 100%;
+      flex: 1 1 auto;
+      min-height: 0;
+      display: grid;
+      gap: 0;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      align-items: stretch;
+    }
+
+    .intro-about {
+      margin: 0;
+      padding: var(--intro-pad-block) var(--intro-pad-inline);
+      background: var(--airmf-surface-light);
+      border: none;
+      border-right: 1px solid #d1d5db;
+      border-radius: 0;
+      display: flex;
+      flex-direction: column;
+      gap: var(--intro-gap);
+      justify-content: center;
+      min-height: 0;
+      overflow: hidden;
     }
 
     .intro-lede {
       margin: 0;
-      color: #cbd5e1;
-      font-size: 1.05rem;
-      line-height: 1.5;
-      max-width: 56rem;
+      color: #334155;
+      font-size: clamp(0.76rem, 1.25vh, 0.88rem);
+      line-height: 1.35;
+      max-width: 34rem;
     }
 
-    .intro-columns {
-      flex: 1 1 auto;
-      min-height: 0;
-      display: grid;
-      gap: 1.6rem;
-      grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
-      align-items: stretch;
+    .intro-support-heading {
+      margin: 0.1rem 0 0;
+      font-family: var(--font-serif);
+      font-size: clamp(0.82rem, 1.35vh, 0.92rem);
+      font-weight: 700;
+      color: var(--airmf-navy);
+      line-height: 1.25;
     }
 
-    .intro-steps {
+    .intro-support-list {
+      list-style: none;
       margin: 0;
-      padding: 1.4rem 1.5rem;
-      background: #16202d;
-      border: 1px solid #2a3441;
-      border-radius: 0.85rem;
+      padding: 0;
       display: flex;
       flex-direction: column;
-      gap: 0.7rem;
+      gap: clamp(0.28rem, 0.5vh, 0.4rem);
+    }
+
+    .intro-support-card {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      padding: clamp(0.45rem, 0.9vh, 0.62rem) 0.75rem;
+      background: var(--airmf-panel);
+      border: 1px solid #e2e8f0;
+      border-radius: 0.3rem;
+    }
+
+    .intro-support-icon {
+      flex-shrink: 0;
+      width: clamp(1.65rem, 2.6vh, 2rem);
+      height: clamp(1.65rem, 2.6vh, 2rem);
+      border-radius: 50%;
+      background: #e2e8f0;
+    }
+
+    .intro-support-text {
+      font-size: clamp(0.72rem, 1.15vh, 0.82rem);
+      line-height: 1.3;
+      color: #334155;
+    }
+
+    .intro-closing {
+      margin: 0.1rem 0 0;
+      font-size: clamp(0.74rem, 1.2vh, 0.86rem);
+      line-height: 1.35;
+      color: #334155;
+      max-width: 34rem;
+    }
+
+    .intro-path-card:focus-visible {
+      outline: 2px solid var(--airmf-adoption);
+      outline-offset: 2px;
+    }
+
+    .intro-visual-panel {
+      margin: 0;
+      padding: var(--intro-pad-block) var(--intro-pad-inline);
+      background: var(--airmf-surface-light);
+      border: none;
+      border-radius: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      align-items: stretch;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    .intro-actions-block {
+      width: 100%;
+      max-width: none;
+      display: flex;
+      flex-direction: column;
+      gap: clamp(0.4rem, 0.75vh, 0.55rem);
+    }
+
+    .intro-actions-label {
+      margin: 0 0 clamp(0.35rem, 0.7vh, 0.5rem);
+      font-family: var(--font-serif);
+      font-size: clamp(0.88rem, 1.4vh, 0.98rem);
+      font-weight: 700;
+      color: var(--airmf-navy);
+      text-align: left;
+      width: 100%;
+    }
+
+    .intro-path-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      width: 100%;
+      min-height: clamp(3.35rem, 6.5vh, 4rem);
+      padding: clamp(0.5rem, 1vh, 0.65rem) 0.85rem;
+      background: var(--airmf-panel);
+      border-radius: 0.4rem;
+      border: 2px solid transparent;
+      color: var(--airmf-navy);
+      text-align: left;
+      font-family: var(--font-sans);
+      cursor: pointer;
+      touch-action: manipulation;
+      transition: transform 0.1s ease, box-shadow 0.15s ease;
+      flex-shrink: 0;
+    }
+
+    .intro-path-card:active {
+      transform: scale(0.99);
+    }
+
+    .intro-path-card--explore {
+      border-color: var(--airmf-accent);
+      box-shadow: none;
+    }
+
+    .intro-path-card--guided {
+      border-color: var(--airmf-adoption);
+      box-shadow: none;
+    }
+
+    .intro-path-card-text {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+
+    .intro-path-card-text strong {
+      font-family: var(--font-serif);
+      font-size: clamp(0.9rem, 1.4vh, 0.98rem);
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    .intro-path-card--explore .intro-path-card-text strong {
+      color: #558b2f;
+    }
+
+    .intro-path-card--guided .intro-path-card-text strong {
+      color: #1e88e5;
+    }
+
+    .intro-path-card-text span {
+      font-size: clamp(0.7rem, 1.1vh, 0.78rem);
+      font-weight: 500;
+      color: #64748b;
+      line-height: 1.25;
+    }
+
+    .intro-path-chevron {
+      flex-shrink: 0;
+      font-size: clamp(1.25rem, 2vh, 1.45rem);
+      font-weight: 300;
+      color: #94a3b8;
+      line-height: 1;
+    }
+
+    #view-airmf-intro .btn-ghost {
+      min-height: 2.5rem;
+      padding: 0.35rem 0.85rem;
+      font-size: 0.88rem;
     }
 
     .intro-section-heading {
       margin: 0;
-      font-size: 0.78rem;
+      font-size: 1.35rem;
       font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: #93c5fd;
-    }
-
-    .step-list {
-      margin: 0;
-      padding: 0 0 0 1.4rem;
-      color: #cbd5e1;
-      font-size: 1.05rem;
-      line-height: 1.5;
-    }
-
-    .step-list li {
-      margin-bottom: 0.55rem;
-    }
-
-    .step-list li:last-child {
-      margin-bottom: 0;
+      letter-spacing: -0.02em;
+      color: var(--airmf-navy);
+      text-transform: none;
     }
 
     @media (max-width: 900px) {
       .intro-columns {
         grid-template-columns: 1fr;
-        gap: 1rem;
+        gap: 0;
+      }
+      .intro-about {
+        border-right: none;
+        border-bottom: 1px solid #d1d5db;
       }
     }
 
-    /* Capability map: 4×2 card grid filling the body so all eight
-       capabilities are visible at once on a 3840×2160 display without
-       scrolling. flex: 1 keeps cards distributing across the full
-       vertical space inside .view-body. */
-    .explore-body {
-      gap: 0.9rem;
+    /* Stylized aiRMF wheel placeholder — concept anchor, not final artwork. */
+    .airmf-wheel {
+      position: relative;
+      width: min(22rem, 38vw);
+      height: min(22rem, 38vw);
+      flex-shrink: 0;
+      pointer-events: none;
+      user-select: none;
     }
 
-    .card-grid {
-      display: grid;
-      gap: 1rem;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      grid-auto-rows: 1fr;
+    .airmf-wheel--hero {
+      width: min(16rem, 28vw);
+      height: min(16rem, 28vw);
+      margin-bottom: 0.5rem;
+    }
+
+    .airmf-wheel--backdrop {
+      position: absolute;
+      left: 50%;
+      top: 42%;
+      transform: translate(-50%, -50%);
+      width: min(26rem, 42vw);
+      height: min(26rem, 42vw);
+      opacity: 0.55;
+      z-index: 0;
+    }
+
+    .airmf-wheel-orbit {
+      position: absolute;
+      inset: 0;
+      border: 2px dashed rgba(148, 163, 184, 0.35);
+      border-radius: 50%;
+      box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.04) inset,
+        0 0 60px rgba(139, 195, 74, 0.08);
+    }
+
+    .airmf-wheel-orbit::before,
+    .airmf-wheel-orbit::after {
+      content: "";
+      position: absolute;
+      border-radius: 50%;
+      border: 1px dotted rgba(148, 163, 184, 0.2);
+    }
+
+    .airmf-wheel-orbit::before {
+      inset: 12%;
+    }
+
+    .airmf-wheel-orbit::after {
+      inset: 24%;
+    }
+
+    .airmf-wheel-disc {
+      position: absolute;
+      inset: 18%;
+      border-radius: 50%;
+      background: linear-gradient(145deg, #f8fafc 0%, #e2e8f0 100%);
+      box-shadow:
+        0 12px 40px rgba(0, 0, 0, 0.35),
+        0 2px 0 #fff inset;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .airmf-wheel-rim {
+      position: absolute;
+      inset: -6%;
+      border-radius: 50%;
+      background: conic-gradient(
+        from 200deg,
+        var(--airmf-foundations) 0deg 115deg,
+        var(--airmf-development) 115deg 245deg,
+        var(--airmf-adoption) 245deg 360deg
+      );
+      mask: radial-gradient(farthest-side, transparent calc(100% - 14px), #000 calc(100% - 13px));
+      -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 14px), #000 calc(100% - 13px));
+    }
+
+    .airmf-wheel-compass {
+      position: absolute;
+      width: 52%;
+      height: 52%;
+      background:
+        conic-gradient(
+          from 0deg,
+          #a5d66a 0deg 45deg,
+          #66bb6a 45deg 90deg,
+          #26a69a 90deg 135deg,
+          #4db6ac 135deg 180deg,
+          #42a5f5 180deg 225deg,
+          #64b5f6 225deg 270deg,
+          #81c784 270deg 315deg,
+          #aed581 315deg 360deg
+        );
+      clip-path: polygon(
+        50% 0%, 62% 38%, 100% 38%, 68% 58%,
+        82% 100%, 50% 72%, 18% 100%, 32% 58%,
+        0% 38%, 38% 38%
+      );
+      opacity: 0.92;
+    }
+
+    .airmf-wheel-hub {
+      position: relative;
+      z-index: 2;
+      width: 28%;
+      height: 28%;
+      border-radius: 50%;
+      background: #0f2744;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-sans);
+      font-size: 0.62rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: lowercase;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Capability map: left filters + right-offset wheel. */
+    #view-explore {
+      overflow: hidden;
+      background: var(--airmf-surface-light);
+      color: var(--airmf-navy);
+      --explore-pad-block: clamp(0.4rem, 0.9vh, 0.7rem);
+      --explore-pad-inline: clamp(0.95rem, 1.7vw, 1.45rem);
+      --explore-gap: clamp(0.25rem, 0.5vh, 0.4rem);
+    }
+
+    #view-explore .app-header {
+      background: var(--airmf-surface-light);
+      border-bottom: 1px solid #d1d5db;
+    }
+
+    #view-explore .app-header h1 {
+      color: var(--airmf-navy);
+    }
+
+    #view-explore .explore-header {
+      flex-shrink: 0;
+      padding: var(--explore-pad-block) var(--explore-pad-inline);
+    }
+
+    #view-explore .explore-header h1 {
+      font-size: clamp(1.15rem, 1.85vh, 1.6rem);
+      line-height: 1.15;
+    }
+
+    #view-explore .map-intro-lede {
+      font-size: 0.92rem;
+      color: #4b5563;
+      max-width: 44rem;
+    }
+
+    #view-explore .view-body {
+      overflow: hidden;
+      padding: 0;
       flex: 1 1 auto;
       min-height: 0;
     }
 
-    @media (max-width: 1200px) {
-      .card-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
+    #view-explore .explore-footer {
+      flex-shrink: 0;
+      padding: 0.45rem var(--explore-pad-inline) 0.5rem;
+      background: var(--airmf-surface-light);
+      border-top: 1px solid #d1d5db;
     }
 
-    @media (max-width: 640px) {
-      .card-grid {
-        grid-template-columns: 1fr;
-      }
+    #view-explore .explore-footer .btn {
+      min-height: 2.45rem;
+      padding: 0 0.85rem;
+      font-size: 0.86rem;
     }
 
-    .cap-card {
+    #view-explore .explore-footer .btn-large {
+      min-height: 2.55rem;
+      padding: 0 1rem;
+      font-size: 0.9rem;
+    }
+
+    #view-explore .btn-primary:disabled {
+      background: #e2e8f0;
+      color: #64748b;
+      border: 1px solid #cbd5e1;
+    }
+
+    .explore-body {
+      gap: 0;
+      min-height: 0;
+      flex: 1 1 auto;
+    }
+
+    .explore-map-layout {
+      display: grid;
+      grid-template-columns: minmax(15.5rem, 28%) 1fr;
+      flex: 1 1 auto;
+      min-height: 0;
+      height: 100%;
+    }
+
+    .explore-sidebar {
       display: flex;
       flex-direction: column;
-      gap: 0.6rem;
-      padding: 1.15rem 1.2rem;
-      background: #1a2332;
-      border-radius: 0.85rem;
-      border: 2px solid #2a3441;
-      cursor: pointer;
-      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+      gap: var(--explore-gap);
+      min-height: 0;
+      padding: var(--explore-pad-block) var(--explore-pad-inline);
+      border-right: 1px solid #d1d5db;
+      overflow-x: hidden;
+      overflow-y: auto;
     }
 
-    .cap-card:focus-visible {
+    .explore-sidebar-intro-heading {
+      margin: 0;
+      font-family: var(--font-serif);
+      font-size: clamp(0.8rem, 1.25vh, 0.9rem);
+      font-weight: 700;
+      color: var(--airmf-navy);
+      line-height: 1.2;
+    }
+
+    .explore-sidebar-intro {
+      margin: 0;
+      font-size: clamp(0.7rem, 1.1vh, 0.8rem);
+      line-height: 1.35;
+      color: #4b5563;
+    }
+
+    .explore-category-filters {
+      display: flex;
+      flex-direction: column;
+      gap: clamp(0.22rem, 0.42vh, 0.35rem);
+      min-height: 0;
+      flex: 0 1 auto;
+    }
+
+    .explore-category-filter {
+      display: block;
+      width: 100%;
+      text-align: left;
+      padding: clamp(0.42rem, 0.8vh, 0.58rem) 0.65rem clamp(0.42rem, 0.8vh, 0.58rem) 0.55rem;
+      border: 1px solid #e2e8f0;
+      border-left-width: 4px;
+      border-left-color: #cbd5e1;
+      border-radius: 0.3rem;
+      background: var(--airmf-panel);
+      cursor: pointer;
+      touch-action: manipulation;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+      flex-shrink: 0;
+    }
+
+    .explore-category-filter:focus-visible {
       outline: 2px solid #93c5fd;
       outline-offset: 2px;
     }
 
-    /* Recommended uses a quiet background lift only — never the border. The
-       border treatment is reserved exclusively for selection state so the
-       visual language stays one-to-one: colored border = in my AI Focus Map.
-       Recommended-ness is carried by the teal "Recommended" pill in the
-       badge row, plus the contextual "Recommended for: <priority>" line
-       inside the capability modal. */
-    .cap-card.is-recommended {
-      background: #182433;
+    .explore-category-filter-title {
+      display: block;
+      font-family: var(--font-serif);
+      font-size: clamp(0.76rem, 1.15vh, 0.86rem);
+      font-weight: 700;
+      color: #6b7280;
+      line-height: 1.2;
+      margin-bottom: 0.18rem;
     }
 
-    .cap-card.is-selected {
-      border-color: #3b82f6;
-      box-shadow: 0 0 0 1px #3b82f680;
+    .explore-category-filter-desc {
+      display: block;
+      font-size: clamp(0.66rem, 1vh, 0.74rem);
+      line-height: 1.28;
+      color: #6b7280;
     }
 
-    /* Top-of-card badge row: holds Recommended and/or Viewed pills side-by-side. */
-    .cap-card-badges {
+    .explore-category-filter[data-category="foundations"].is-active {
+      border-left-color: var(--airmf-foundations);
+      box-shadow: 0 2px 10px rgba(124, 179, 66, 0.12);
+    }
+
+    .explore-category-filter[data-category="foundations"].is-active .explore-category-filter-title {
+      color: var(--airmf-foundations);
+    }
+
+    .explore-category-filter[data-category="development"].is-active {
+      border-left-color: var(--airmf-development);
+      box-shadow: 0 2px 10px rgba(38, 166, 154, 0.12);
+    }
+
+    .explore-category-filter[data-category="development"].is-active .explore-category-filter-title {
+      color: var(--airmf-development);
+    }
+
+    .explore-category-filter[data-category="adoption"].is-active {
+      border-left-color: var(--airmf-adoption);
+      box-shadow: 0 2px 10px rgba(66, 165, 245, 0.12);
+    }
+
+    .explore-category-filter[data-category="adoption"].is-active .explore-category-filter-title {
+      color: var(--airmf-adoption);
+    }
+
+    .explore-wheel-panel {
       display: flex;
-      flex-wrap: wrap;
-      gap: 0.35rem;
-      align-self: flex-start;
+      align-items: center;
+      justify-content: flex-end;
+      min-width: 0;
+      min-height: 0;
+      padding: 0.25rem 1.5vw 0.25rem 0.5rem;
+      overflow: hidden;
+    }
+
+    .wheel-stage {
+      position: relative;
+      flex: 0 1 auto;
+      min-height: 0;
+      max-height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      overflow: hidden;
+    }
+
+    .wheel-artboard {
+      position: relative;
+      flex: 0 1 auto;
+      width: min(68vw, calc(74vh * 1024 / 970), 78rem);
+      max-height: 100%;
+      aspect-ratio: 1024 / 970;
+    }
+
+    .wheel-stage-image {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      user-select: none;
+      pointer-events: none;
+    }
+
+    .wheel-targets {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .wheel-target {
+      position: absolute;
+      pointer-events: auto;
+      transform: translate(-50%, -50%);
+      width: 8.5%;
+      aspect-ratio: 1;
+      cursor: pointer;
+      touch-action: manipulation;
+      transition: opacity 0.15s ease, transform 0.15s ease, filter 0.15s ease;
+    }
+
+    .wheel-target:focus-within {
+      outline: none;
+    }
+
+    .wheel-target-hit {
+      position: relative;
+      display: block;
+      width: 100%;
+      height: 100%;
+      padding: 0;
+      border: 2px solid rgba(255, 255, 255, 0.7);
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.2);
+      box-shadow:
+        0 0 0 1px rgba(15, 39, 68, 0.16),
+        inset 0 0 10px rgba(255, 255, 255, 0.12);
+      color: inherit;
+      font: inherit;
+      cursor: pointer;
+      touch-action: manipulation;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    }
+
+    .wheel-target-dot {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 24%;
+      height: 24%;
+      border-radius: 50%;
+      background: rgba(15, 39, 68, 0.45);
+      border: 1px solid rgba(255, 255, 255, 0.55);
+      pointer-events: none;
+    }
+
+    .wheel-target-star {
+      position: absolute;
+      top: -0.2rem;
+      right: -0.2rem;
+      font-size: 0.72rem;
+      line-height: 1;
+      color: #fbbf24;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+      pointer-events: none;
+      display: none;
+    }
+
+    .wheel-target.is-selected .wheel-target-star {
+      display: block;
+    }
+
+    /* Capability label — offset outward from wheel center, away from artwork. */
+    .wheel-target-label {
+      position: absolute;
+      left: calc(50% + var(--label-ox, 0rem));
+      top: calc(50% + var(--label-oy, 0rem));
+      transform: translate(-50%, -50%);
+      margin: 0;
+      font-family: var(--font-serif);
+      font-size: clamp(0.68rem, 0.95vmin, 0.88rem);
+      font-weight: 600;
+      line-height: 1.15;
+      text-align: center;
+      width: max-content;
+      max-width: 10.5rem;
+      text-wrap: balance;
+      color: #1e293b;
+      pointer-events: none;
+      text-shadow: 0 1px 2px rgba(255, 255, 255, 0.85);
+    }
+
+    .wheel-target[data-domain="foundations"] .wheel-target-label {
+      color: #558b2f;
+    }
+
+    .wheel-target[data-domain="development"] .wheel-target-label {
+      color: #00796b;
+    }
+
+    .wheel-target[data-domain="adoption"] .wheel-target-label {
+      color: #1565c0;
+    }
+
+    .wheel-target[data-domain="foundations"] .wheel-target-hit {
+      border-color: rgba(124, 179, 66, 0.72);
+      background: rgba(124, 179, 66, 0.14);
+    }
+
+    .wheel-target[data-domain="foundations"] .wheel-target-dot {
+      background: rgba(124, 179, 66, 0.65);
+    }
+
+    .wheel-target[data-domain="development"] .wheel-target-hit {
+      border-color: rgba(38, 166, 154, 0.72);
+      background: rgba(38, 166, 154, 0.14);
+    }
+
+    .wheel-target[data-domain="development"] .wheel-target-dot {
+      background: rgba(38, 166, 154, 0.65);
+    }
+
+    .wheel-target[data-domain="adoption"] .wheel-target-hit {
+      border-color: rgba(66, 165, 245, 0.72);
+      background: rgba(66, 165, 245, 0.14);
+    }
+
+    .wheel-target[data-domain="adoption"] .wheel-target-dot {
+      background: rgba(66, 165, 245, 0.65);
+    }
+
+    .wheel-target-hit:focus-visible,
+    .wheel-target-hit:hover {
+      border-color: rgba(255, 255, 255, 0.95);
+      background: rgba(255, 255, 255, 0.32);
+      box-shadow:
+        0 0 0 3px rgba(59, 130, 246, 0.35),
+        inset 0 0 12px rgba(255, 255, 255, 0.2);
+    }
+
+    /* Starred — gold accent ring */
+    .wheel-target.is-selected .wheel-target-hit {
+      border-color: #f59e0b;
+      background: rgba(245, 158, 11, 0.22);
+      box-shadow:
+        0 0 0 3px rgba(245, 158, 11, 0.5),
+        0 0 16px rgba(245, 158, 11, 0.35);
+    }
+
+    .wheel-target.is-selected .wheel-target-dot {
+      background: #f59e0b;
+      border-color: #fffbeb;
+    }
+
+    .wheel-target.is-selected .wheel-target-label {
+      color: #b45309;
+    }
+
+    .wheel-target.is-dimmed {
+      opacity: 0.35;
+      filter: saturate(0.55);
+    }
+
+    .wheel-target.is-emphasized {
+      opacity: 1;
+      filter: none;
+      transform: translate(-50%, -50%) scale(1.04);
+      z-index: 2;
+    }
+
+    /* Recommended — green glow for journey suggestions (not category filters). */
+    .wheel-target.is-recommended:not(.is-selected) .wheel-target-hit {
+      border-color: var(--airmf-foundations);
+      background: rgba(139, 195, 74, 0.2);
+      box-shadow:
+        0 0 0 3px rgba(139, 195, 74, 0.55),
+        0 0 18px rgba(139, 195, 74, 0.32);
+    }
+
+    .wheel-target.is-recommended:not(.is-selected) .wheel-target-label {
+      color: #558b2f;
+      font-weight: 700;
+    }
+
+    .wheel-target.is-recommended:not(.is-selected) .wheel-target-hit::before {
+      content: "Suggested";
+      position: absolute;
+      left: 50%;
+      top: -1.35rem;
+      transform: translateX(-50%);
+      padding: 0.1rem 0.38rem;
+      font-family: var(--font-sans);
+      font-size: clamp(0.52rem, 0.75vmin, 0.62rem);
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      color: #fff;
+      background: var(--airmf-foundations);
+      border-radius: 0.2rem;
+      white-space: nowrap;
+      pointer-events: none;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Viewed — secondary ring + checkmark badge */
+    .wheel-target.is-viewed .wheel-target-hit {
+      box-shadow:
+        0 0 0 2px rgba(148, 163, 184, 0.6),
+        0 0 12px rgba(148, 163, 184, 0.25),
+        inset 0 0 10px rgba(255, 255, 255, 0.12);
+    }
+
+    .wheel-target.is-viewed.is-selected .wheel-target-hit {
+      box-shadow:
+        0 0 0 3px rgba(245, 158, 11, 0.5),
+        0 0 0 5px rgba(148, 163, 184, 0.45),
+        0 0 16px rgba(245, 158, 11, 0.35);
+    }
+
+    .wheel-target.is-viewed .wheel-target-hit::after {
+      content: "✓";
+      position: absolute;
+      right: -0.12rem;
+      bottom: -0.12rem;
+      width: 1.05rem;
+      height: 1.05rem;
+      border-radius: 50%;
+      background: #334155;
+      color: #e2e8f0;
+      font-family: var(--font-sans);
+      font-size: 0.56rem;
+      font-weight: 700;
+      line-height: 1.05rem;
+      text-align: center;
+      border: 2px solid #1a2332;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+      pointer-events: none;
+    }
+
+    /* Debug alignment mode — toggle SHOW_HOTSPOT_DEBUG in JS. */
+    .wheel-targets.is-debug .wheel-target-hit {
+      border-color: #ff00ff !important;
+      background: rgba(255, 0, 255, 0.35) !important;
+      box-shadow: 0 0 0 2px #00e5ff !important;
+    }
+
+    .wheel-targets.is-debug .wheel-target-label {
+      background: rgba(255, 255, 0, 0.88);
+      color: #111;
+      text-shadow: none;
+      padding: 0.1rem 0.3rem;
+      border-radius: 0.2rem;
+    }
+
+    @media (max-width: 1100px) {
+      .explore-map-layout {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr;
+      }
+
+      .explore-sidebar {
+        border-right: none;
+        border-bottom: 1px solid #d1d5db;
+        padding-bottom: 0.65rem;
+      }
+
+      .explore-wheel-panel {
+        justify-content: center;
+        padding: 0.25rem 0.5rem;
+      }
+
+      .wheel-artboard {
+        width: min(92vw, calc(58vh * 1024 / 970));
+      }
     }
 
     .cap-recommend-label {
       display: inline-flex;
       align-items: center;
-      font-size: 0.65rem;
+      font-size: 0.58rem;
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: #5eead4;
-      background: #042f2e;
-      padding: 0.2rem 0.5rem;
-      border-radius: 0.35rem;
-      border: 1px solid #134e4a;
-    }
-
-    /* Viewed: subtle gray pill, deliberately quieter than Selected (amber/blue)
-       and Recommended (teal) so it never competes with selection state. */
-    .cap-viewed-label {
-      display: inline-flex;
-      align-items: center;
-      font-size: 0.65rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: #cbd5e1;
-      background: #1e293b;
-      padding: 0.2rem 0.5rem;
-      border-radius: 0.35rem;
-      border: 1px solid #334155;
-    }
-
-    .cap-card h2 {
-      margin: 0;
-      font-size: 1.15rem;
-      font-weight: 650;
-      line-height: 1.25;
-    }
-
-    .cap-card p {
-      margin: 0;
-      flex: 1;
-      color: #94a3b8;
-      font-size: 0.92rem;
-      line-height: 1.35;
-    }
-
-    .cap-card-footer {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.75rem;
-      margin-top: auto;
-    }
-
-    .cap-card-footer .hint {
-      font-size: 0.78rem;
-      color: #94a3b8;
+      letter-spacing: 0.05em;
+      padding: 0.18rem 0.45rem;
+      border-radius: 0.3rem;
+      color: #1a2e05;
+      background: var(--airmf-accent);
+      border: none;
     }
 
     /* AI Focus Map: 3-column body — starred capabilities, contact
@@ -854,7 +1749,7 @@
     }
 
     .placeholder-field input {
-      font: inherit;
+      font-family: var(--font-sans);
       font-size: 0.9rem;
       padding: 0.55rem 0.7rem;
       background: #131c29;
@@ -971,7 +1866,8 @@
       padding: 0.8rem;
       max-height: 9rem;
       overflow: auto;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-family: var(--font-sans);
+      font-variant-numeric: tabular-nums;
       font-size: 0.7rem;
       line-height: 1.35;
       color: #cbd5e1;
@@ -982,133 +1878,344 @@
       word-break: break-word;
     }
 
-    /* Capability detail modal: opened by clicking a card; star button stops
-       propagation so it never opens the modal accidentally. */
+    /* Capability detail modal — light single-page layout with work areas. */
     .modal-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(8, 12, 20, 0.78);
-      backdrop-filter: blur(4px);
-      -webkit-backdrop-filter: blur(4px);
+      background: rgba(42, 53, 64, 0.45);
+      backdrop-filter: blur(2px);
+      -webkit-backdrop-filter: blur(2px);
       z-index: 50;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 1.25rem;
-      overflow-y: auto;
+      padding: clamp(0.75rem, 1.5vh, 1.25rem);
+      overflow: hidden;
     }
 
     .modal-overlay[hidden] {
       display: none;
     }
 
-    /* Kiosk modal: wider canvas (up to 78rem) with a 2-column section
-       grid so Why / Examples / Implementation read at a glance without
-       scrolling. All action controls live in a sticky bottom footer
-       (.modal-footer) — including the close button, which moved out of
-       the top-right corner so it's reachable from the lower half of
-       a tall touchscreen. */
     .modal-content {
       position: relative;
       width: 100%;
-      max-width: 78rem;
-      max-height: calc(100vh - 3rem);
+      max-width: min(92vw, 78rem);
+      max-height: calc(100vh - 2rem);
+      max-height: calc(100dvh - 2rem);
       display: flex;
       flex-direction: column;
       padding: 0;
-      background: #1a2332;
-      border: 1px solid #334155;
-      border-radius: 1rem;
-      color: #e8ecf1;
-      box-shadow: 0 20px 60px -20px rgba(0, 0, 0, 0.5);
+      background: var(--airmf-panel);
+      border: 1px solid #d1d5db;
+      border-radius: 0.65rem;
+      color: var(--airmf-navy);
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.22);
       overflow: hidden;
     }
 
-    .modal-header {
-      padding: 1.6rem 1.9rem 1rem;
-      border-bottom: 1px solid #2a3441;
+    .modal-topbar {
       flex-shrink: 0;
-    }
-
-    .modal-body {
-      padding: 1.4rem 1.9rem;
-      overflow-y: auto;
-      flex: 1 1 auto;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: clamp(0.65rem, 1.2vh, 0.85rem) clamp(1rem, 1.8vw, 1.35rem) 0;
       min-height: 0;
     }
 
-    .modal-sections {
-      display: grid;
-      gap: 1.4rem;
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    .modal-topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      flex-shrink: 0;
+      margin-left: auto;
     }
 
-    .modal-section--wide {
-      grid-column: 1 / -1;
+    .modal-topbar-star {
+      min-width: 2.65rem;
+      min-height: 2.65rem;
+      border-radius: 50%;
+      font-size: 1.15rem;
+      background: #fef3c7;
+      border: 2px solid #f59e0b;
+      color: #b45309;
+    }
+
+    .modal-topbar-star[aria-pressed="true"] {
+      background: #422006;
+      border-color: #f59e0b;
+      color: #fbbf24;
+    }
+
+    .modal-topbar-close {
+      min-width: 2.65rem;
+      min-height: 2.65rem;
+      padding: 0;
+      border: none;
+      border-radius: 50%;
+      background: #1e293b;
+      color: #fff;
+      font-size: 1.35rem;
+      line-height: 1;
+      font-weight: 400;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    .modal-topbar-close:active {
+      background: #334155;
+    }
+
+    .modal-topbar-close:focus-visible,
+    .modal-topbar-star:focus-visible {
+      outline: 2px solid var(--airmf-foundations);
+      outline-offset: 2px;
+    }
+
+    .modal-body {
+      padding: 0 clamp(1rem, 1.8vw, 1.35rem) clamp(0.85rem, 1.5vh, 1.1rem);
+      overflow-y: auto;
+      flex: 1 1 auto;
+      min-height: 0;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .modal-overview {
+      display: grid;
+      grid-template-columns: minmax(5.5rem, 14%) minmax(0, 1fr) minmax(6rem, 16%);
+      gap: clamp(0.65rem, 1.2vw, 1rem);
+      align-items: stretch;
+      padding-bottom: clamp(0.65rem, 1.2vh, 0.9rem);
     }
 
     @media (max-width: 900px) {
-      .modal-sections {
+      .modal-overview {
+        grid-template-columns: 1fr;
+      }
+      .modal-overview-art {
+        min-height: 6rem;
+      }
+    }
+
+    .modal-overview-art {
+      min-height: clamp(6rem, 14vh, 9rem);
+      background: linear-gradient(145deg, #f8fafc 0%, #e2e8f0 100%);
+      border: 1px solid #e2e8f0;
+      border-radius: 0.35rem;
+    }
+
+    .modal-overview-main {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+      min-width: 0;
+    }
+
+    .modal-title {
+      margin: 0;
+      font-size: clamp(1.15rem, 2vh, 1.45rem);
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      color: var(--airmf-navy);
+      line-height: 1.2;
+    }
+
+    .modal-overview-lede {
+      margin: 0;
+      font-size: clamp(0.78rem, 1.15vh, 0.88rem);
+      line-height: 1.45;
+      color: #334155;
+    }
+
+    .modal-overview-bullets {
+      margin: 0.15rem 0 0;
+      padding-left: 1.1rem;
+      font-size: clamp(0.74rem, 1.05vh, 0.82rem);
+      line-height: 1.4;
+      color: #475569;
+    }
+
+    .modal-overview-bullets li {
+      margin-bottom: 0.2rem;
+    }
+
+    .modal-overview-bullets li:last-child {
+      margin-bottom: 0;
+    }
+
+    .modal-case-study-cta {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100%;
+      padding: 0.65rem;
+      font-family: var(--font-sans);
+      font-size: clamp(0.72rem, 1vh, 0.8rem);
+      font-weight: 650;
+      color: #64748b;
+      text-align: center;
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.35rem;
+      cursor: not-allowed;
+      touch-action: manipulation;
+    }
+
+    .modal-case-study-cta:not(:disabled) {
+      cursor: pointer;
+      color: var(--airmf-navy);
+    }
+
+    .modal-case-study-cta:not(:disabled):active {
+      background: #e2e8f0;
+    }
+
+    .modal-divider {
+      margin: 0 0 clamp(0.55rem, 1vh, 0.75rem);
+      border: none;
+      border-top: 1px solid #e2e8f0;
+    }
+
+    .modal-work-area-nav {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      margin: 0 0 clamp(0.65rem, 1.1vh, 0.85rem);
+      padding: 0.35rem 0 0.5rem;
+      background: var(--airmf-panel);
+      border-bottom: 1px solid #f1f5f9;
+    }
+
+    .modal-work-tabs {
+      display: flex;
+      gap: clamp(0.35rem, 0.65vw, 0.5rem);
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 0.15rem;
+    }
+
+    .modal-work-tab {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      flex: 1 1 0;
+      min-width: min(11rem, 42vw);
+      max-width: 14rem;
+      padding: 0.5rem 0.55rem;
+      text-align: left;
+      font-family: var(--font-sans);
+      font-size: clamp(0.62rem, 0.95vh, 0.72rem);
+      font-weight: 600;
+      line-height: 1.25;
+      color: #64748b;
+      background: var(--airmf-panel);
+      border: 1px solid #d1d5db;
+      border-radius: 0.3rem;
+      cursor: pointer;
+      touch-action: manipulation;
+      transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    }
+
+    .modal-work-tab-marker {
+      flex-shrink: 0;
+      width: 0.65rem;
+      height: 0.65rem;
+      border-radius: 50%;
+      background: #cbd5e1;
+    }
+
+    .modal-work-tab:not(.is-active) {
+      opacity: 0.72;
+    }
+
+    .modal-work-tab.is-active {
+      color: var(--airmf-navy);
+      background: var(--airmf-foundations-soft);
+      border-color: #c5e1a5;
+    }
+
+    .modal-work-tab.is-active .modal-work-tab-marker {
+      background: var(--airmf-foundations);
+    }
+
+    .modal-work-tab:focus-visible {
+      outline: 2px solid var(--airmf-foundations);
+      outline-offset: 2px;
+    }
+
+    .modal-work-details {
+      min-height: 0;
+    }
+
+    .modal-work-detail {
+      margin: 0;
+    }
+
+    .modal-work-detail-title {
+      margin: 0 0 0.25rem;
+      font-family: var(--font-serif);
+      font-size: clamp(1rem, 1.6vh, 1.15rem);
+      font-weight: 700;
+      color: var(--airmf-navy);
+      line-height: 1.25;
+    }
+
+    .modal-work-detail-subtitle {
+      margin: 0 0 0.75rem;
+      font-size: clamp(0.78rem, 1.1vh, 0.88rem);
+      line-height: 1.4;
+      color: #475569;
+    }
+
+    .modal-work-panels {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: clamp(0.55rem, 1vw, 0.75rem);
+    }
+
+    @media (max-width: 768px) {
+      .modal-work-panels {
         grid-template-columns: 1fr;
       }
     }
 
-    .modal-title {
-      margin: 0 0 0.55rem;
-      font-size: 1.55rem;
-      font-weight: 650;
-      letter-spacing: -0.01em;
-      color: #f1f5f9;
-      line-height: 1.2;
+    .modal-work-panel {
+      padding: clamp(0.65rem, 1.1vh, 0.85rem) clamp(0.7rem, 1.1vw, 0.9rem);
+      background: var(--airmf-foundations-soft);
+      border: 1px solid #dcedc8;
+      border-radius: 0.35rem;
     }
 
-    .modal-description {
-      margin: 0;
-      color: #cbd5e1;
-      font-size: 1.05rem;
-      line-height: 1.5;
-    }
-
-    .modal-section {
-      margin: 0;
-    }
-
-    .modal-section h3 {
+    .modal-work-panel-heading {
       margin: 0 0 0.45rem;
-      font-size: 0.75rem;
+      font-size: clamp(0.72rem, 1.05vh, 0.8rem);
       font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: #93c5fd;
+      color: var(--airmf-navy);
+      line-height: 1.3;
     }
 
-    .modal-section p,
-    .modal-section ul {
+    .modal-work-panel-list {
       margin: 0;
-      color: #cbd5e1;
-      font-size: 0.98rem;
-      line-height: 1.5;
+      padding-left: 1rem;
+      font-size: clamp(0.68rem, 1vh, 0.76rem);
+      line-height: 1.4;
+      color: #334155;
     }
 
-    .modal-section ul {
-      padding-left: 1.25rem;
+    .modal-work-panel-list li {
+      margin-bottom: 0.25rem;
     }
 
-    .modal-section ul li {
-      margin-bottom: 0.3rem;
-    }
-
-    .modal-section ul li:last-child {
+    .modal-work-panel-list li:last-child {
       margin-bottom: 0;
     }
 
-    /* Modal footer: all action controls in a single bottom bar so visitors
-       never have to reach the top of the screen to close or select. */
     .modal-footer {
       flex-shrink: 0;
-      padding: 1.1rem 1.9rem 1.25rem;
-      border-top: 1px solid #2a3441;
-      background: #131c29;
+      padding: 0.75rem clamp(1rem, 1.8vw, 1.35rem) 0.9rem;
+      border-top: 1px solid #e2e8f0;
+      background: #f8fafc;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -1122,37 +2229,32 @@
       gap: 0.55rem;
     }
 
-    .modal-actions {
-      display: flex;
-      align-items: center;
-      gap: 0.7rem;
-      flex-wrap: wrap;
+    .modal-pager .btn-ghost {
+      background: var(--airmf-panel);
+      color: var(--airmf-navy);
+      border: 1px solid #cbd5e1;
     }
 
-    .modal-status {
-      font-size: 0.92rem;
-      color: #94a3b8;
+    .modal-pager .btn-ghost:active {
+      background: #f1f5f9;
     }
 
-    /* In-modal recommendation framing. Appears in the header (under the
-       description) only when the open capability is recommended by the
-       visitor's current guided-question priority — closing the loop
-       between the intro question and the card they're considering.
-       Deliberately not a pill: the card already shows the "Recommended"
-       pill, so the modal's job is to add the missing context (FOR WHAT). */
     .modal-recommend-context {
-      margin: 0.7rem 0 0;
+      margin: 0;
       display: flex;
       align-items: baseline;
-      gap: 0.45rem;
-      font-size: 0.95rem;
-      color: #5eead4;
+      gap: 0.35rem;
+      font-size: clamp(0.72rem, 1.05vh, 0.82rem);
+      color: #0f766e;
+      flex: 1 1 auto;
+      min-width: 0;
     }
 
     .modal-recommend-context::before {
       content: "★";
       color: #14b8a6;
-      font-size: 0.85rem;
+      font-size: 0.8rem;
+      flex-shrink: 0;
     }
 
     .modal-recommend-context[hidden] {
@@ -1160,34 +2262,27 @@
     }
 
     .modal-recommend-context-priority {
-      color: #cbd5e1;
-      font-weight: 500;
-    }
-
-    /* The close button is now an inline footer action — drop the absolute
-       positioning the old top-right × used. Same id, same JS listener. */
-    .modal-close {
-      position: static;
-      min-width: 0;
-      min-height: 3rem;
-      padding: 0 1.25rem;
-      background: #1e293b;
-      color: #e8ecf1;
-      border: 1px solid #334155;
-      border-radius: 0.65rem;
-      cursor: pointer;
-      font-size: 1rem;
-      line-height: 1;
+      color: #334155;
       font-weight: 600;
     }
 
-    .modal-close:active {
-      background: #283448;
+    .modal-position {
+      font-size: 0.85rem;
+      color: #64748b;
+      letter-spacing: 0.02em;
+      min-width: 4rem;
+      text-align: center;
     }
 
-    .modal-close:focus-visible {
-      outline: 2px solid #93c5fd;
-      outline-offset: 2px;
+    .modal-pager .btn {
+      min-width: 0;
+      padding: 0 1rem;
+      min-height: 2.65rem;
+    }
+
+    .modal-pager .btn[disabled] {
+      opacity: 0.4;
+      cursor: not-allowed;
     }
 
     /* Toast: transient feedback for selection changes / clear action. */
@@ -1232,25 +2327,418 @@
       font-weight: 500;
     }
 
-    /* Modal pager: prev/position/next now lives inside .modal-footer as
-       the left-most action group. The position label sits between the
-       Prev/Next buttons so it visually anchors the pager. */
-    .modal-position {
-      font-size: 0.85rem;
+    /* Capability preview: right-side concept panel with art placeholder. */
+    .preview-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 39, 68, 0.45);
+      backdrop-filter: blur(2px);
+      -webkit-backdrop-filter: blur(2px);
+      z-index: 45;
+      display: flex;
+      align-items: stretch;
+      justify-content: flex-end;
+      padding: 1.25rem 1.25rem 1.25rem 0;
+    }
+
+    .preview-overlay[hidden] {
+      display: none;
+    }
+
+    .preview-content {
+      position: relative;
+      width: min(28rem, 34vw);
+      max-height: calc(100vh - 2.5rem);
+      display: flex;
+      flex-direction: column;
+      padding: 0;
+      background: var(--airmf-panel);
+      border: 1px solid #d1d5db;
+      border-radius: 1rem 0 0 1rem;
+      color: var(--airmf-navy);
+      box-shadow: -12px 0 48px rgba(0, 0, 0, 0.28);
+      overflow: hidden;
+    }
+
+    .preview-close-fab {
+      position: absolute;
+      top: 0.85rem;
+      right: 0.85rem;
+      z-index: 2;
+      width: 2.5rem;
+      height: 2.5rem;
+      padding: 0;
+      border-radius: 50%;
+      background: #0f2744;
+      color: #fff;
+      border: none;
+      font-family: var(--font-sans);
+      font-size: 1.25rem;
+      line-height: 1;
+      font-weight: 400;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .preview-close-fab:focus-visible {
+      outline: 2px solid var(--airmf-adoption);
+      outline-offset: 2px;
+    }
+
+    .preview-art {
+      flex-shrink: 0;
+      height: 11rem;
+      background:
+        linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 100%),
+        repeating-linear-gradient(
+          -45deg,
+          transparent,
+          transparent 8px,
+          rgba(148, 163, 184, 0.12) 8px,
+          rgba(148, 163, 184, 0.12) 9px
+        );
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .preview-art::after {
+      content: "Illustration placeholder";
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
       color: #94a3b8;
-      letter-spacing: 0.02em;
-      min-width: 4rem;
+    }
+
+    .preview-body {
+      flex: 1 1 auto;
+      min-height: 0;
+      padding: 1.25rem 1.35rem 1.35rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+    }
+
+    .preview-category {
+      margin: 0;
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--airmf-development);
+    }
+
+    .preview-title {
+      margin: 0;
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--airmf-navy);
+      line-height: 1.2;
+    }
+
+    .preview-description {
+      margin: 0;
+      flex: 1 1 auto;
+      color: #475569;
+      font-size: 0.95rem;
+      line-height: 1.45;
+    }
+
+    .preview-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      margin-top: 0.75rem;
+    }
+
+    .preview-actions .btn-primary {
+      width: 100%;
+      min-height: 3.25rem;
+      background: var(--airmf-accent);
+      color: #1a2e05;
+      font-weight: 700;
+      border-radius: 0.45rem;
+    }
+
+    .preview-actions .btn-primary:active {
+      background: #7cb342;
+    }
+
+    .preview-actions .preview-close-text {
+      display: none;
+    }
+
+    /* Guided Experience: two-step overlay on the Capability Map. */
+    .guided-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      display: grid;
+      grid-template-columns: minmax(0, 40%) 1fr;
+      grid-template-rows: minmax(0, 1fr);
+      height: 100%;
+      max-height: 100dvh;
+      padding: 0;
+      background: transparent;
+      pointer-events: none;
+    }
+
+    .guided-overlay[hidden] {
+      display: none;
+    }
+
+    .guided-panel {
+      pointer-events: auto;
+    }
+
+    .guided-panel--question {
+      grid-column: 1;
+      grid-row: 1;
+      background: var(--airmf-panel);
+      padding: clamp(0.85rem, 1.8vh, 1.35rem) clamp(1rem, 1.8vw, 1.6rem);
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      min-height: 0;
+      max-height: 100vh;
+      box-shadow: 8px 0 32px rgba(0, 0, 0, 0.12);
+      overflow-x: hidden;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .guided-panel--map-scrim {
+      grid-column: 2;
+      grid-row: 1;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      min-height: 0;
+      padding: clamp(1.5rem, 3vh, 2.5rem);
+      background: rgba(42, 53, 64, 0.38);
+    }
+
+    .guided-panel--recommendations {
+      display: none;
+      grid-column: 2;
+      grid-row: 1;
+      width: 100%;
+      min-height: 0;
+      max-height: 100dvh;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: clamp(0.65rem, 1.3vh, 1rem);
+      padding: clamp(0.85rem, 1.6vh, 1.35rem) clamp(1rem, 1.5vw, 1.5rem);
+      background: rgba(42, 53, 64, 0.38);
+      overflow-x: hidden;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .guided-overlay[data-guided-step="recommendations"] .guided-panel--map-scrim {
+      display: none;
+    }
+
+    .guided-overlay[data-guided-step="recommendations"] .guided-panel--recommendations {
+      display: flex;
+    }
+
+    .guided-recommendations-heading {
+      margin: 0;
+      padding: 0.55rem 1.1rem;
+      font-family: var(--font-serif);
+      font-size: clamp(1rem, 1.8vh, 1.25rem);
+      font-weight: 700;
+      color: #fff;
       text-align: center;
+      background: rgba(0, 0, 0, 0.55);
+      border-radius: 0.4rem;
+      line-height: 1.3;
     }
 
-    .modal-pager .btn {
+    .guided-recommendation-cards {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: clamp(0.5rem, 1vw, 0.85rem);
+      width: 100%;
+      max-width: 52rem;
+    }
+
+    .guided-recommendation-card {
+      display: flex;
+      flex-direction: column;
+      background: var(--airmf-panel);
+      border-radius: 0.5rem;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
+      overflow: hidden;
       min-width: 0;
-      padding: 0 1rem;
+      cursor: pointer;
+      touch-action: manipulation;
+      text-align: left;
+      font: inherit;
+      color: inherit;
+      padding: 0;
+      appearance: none;
+      -webkit-appearance: none;
     }
 
-    .modal-pager .btn[disabled] {
-      opacity: 0.4;
-      cursor: not-allowed;
+    .guided-recommendation-card:active {
+      transform: scale(0.99);
+    }
+
+    .guided-recommendation-card:focus-visible {
+      outline: 2px solid var(--airmf-foundations);
+      outline-offset: 2px;
+    }
+
+    .guided-recommendation-art {
+      height: clamp(3.5rem, 8vh, 5.5rem);
+      background: linear-gradient(145deg, #f1f5f9 0%, #e2e8f0 100%);
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .guided-recommendation-body {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+      padding: 0.75rem 0.85rem 0.85rem;
+      flex: 1 1 auto;
+    }
+
+    .guided-recommendation-title {
+      margin: 0;
+      font-family: var(--font-serif);
+      font-size: clamp(0.82rem, 1.2vh, 0.95rem);
+      font-weight: 700;
+      color: var(--airmf-navy);
+      line-height: 1.25;
+    }
+
+    .guided-recommendation-desc {
+      margin: 0;
+      font-size: clamp(0.72rem, 1vh, 0.8rem);
+      line-height: 1.35;
+      color: #475569;
+      flex: 1 1 auto;
+    }
+
+    .guided-recommendation-card .btn-primary {
+      width: 100%;
+      min-height: 2.5rem;
+      margin-top: 0.25rem;
+      background: var(--airmf-foundations);
+      font-size: 0.88rem;
+      pointer-events: none;
+    }
+
+    .guided-recommendation-card .btn-primary:active {
+      background: #689f38;
+    }
+
+    .guided-entry--overlay {
+      width: 100%;
+      max-width: 28rem;
+      gap: clamp(0.55rem, 1.1vh, 0.85rem);
+    }
+
+    .guided-entry--overlay .guided-entry-heading {
+      font-size: clamp(1.1rem, 2.1vh, 1.45rem);
+      line-height: 1.2;
+    }
+
+    .guided-entry--overlay .guided-entry-sub {
+      font-size: clamp(0.82rem, 1.3vh, 0.95rem);
+    }
+
+    .guided-entry--overlay .guided-entry-buttons {
+      gap: clamp(0.4rem, 0.75vh, 0.6rem);
+    }
+
+    .guided-entry--overlay .btn-response {
+      min-height: 0;
+      padding: clamp(0.5rem, 0.95vh, 0.75rem) clamp(0.7rem, 1.1vw, 0.95rem);
+      gap: 0.2rem;
+    }
+
+    .guided-entry--overlay .btn-response-title {
+      font-size: clamp(0.85rem, 1.35vh, 1rem);
+      line-height: 1.2;
+    }
+
+    .guided-entry--overlay .btn-response-desc {
+      font-size: clamp(0.68rem, 1.05vh, 0.78rem);
+      line-height: 1.3;
+    }
+
+    .btn-explore-freely-escape {
+      min-width: min(18rem, 80%);
+      min-height: 3rem;
+      padding: 0 1.25rem;
+      background: var(--airmf-panel);
+      border: 2px solid #1e293b;
+      color: var(--airmf-navy);
+      font-weight: 650;
+      border-radius: 0.45rem;
+    }
+
+    .btn-explore-freely-escape:active {
+      background: #f1f5f9;
+    }
+
+    .btn-explore-freely-guided {
+      min-width: min(16rem, 70%);
+      min-height: 3rem;
+      padding: 0 1.25rem;
+      background: var(--airmf-panel);
+      border: 2px solid #1e293b;
+      color: var(--airmf-navy);
+      font-weight: 650;
+      border-radius: 0.45rem;
+      font-family: var(--font-sans);
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    .btn-explore-freely-guided:active {
+      background: #f1f5f9;
+    }
+
+    @media (max-width: 1100px) {
+      .guided-overlay {
+        grid-template-columns: 1fr;
+        grid-template-rows: minmax(0, 1fr) auto;
+      }
+      .guided-panel--question {
+        grid-column: 1;
+        grid-row: 1;
+      }
+      .guided-panel--map-scrim,
+      .guided-panel--recommendations {
+        grid-column: 1;
+        grid-row: 2;
+      }
+      .guided-panel--map-scrim {
+        min-height: 10rem;
+      }
+      .guided-recommendation-cards {
+        grid-template-columns: 1fr;
+      }
+      .preview-overlay {
+        padding: 1rem;
+        justify-content: center;
+      }
+      .preview-content {
+        width: 100%;
+        max-width: 28rem;
+        border-radius: 1rem;
+      }
     }
   </style>
 </head>
@@ -1284,73 +2772,113 @@
     </div>
   </div>
 
-  <!-- aiRMF Intro: orientation + optional focus question. Single-screen
-       layout — title at top, two-column body (steps | guided question),
-       Exit + Continue in the reachable bottom footer. -->
+  <!-- aiRMF Intro: orientation + entry actions. Explore Freely opens the
+       Capability Map; Guided Experience opens the map with the journey
+       question overlay. -->
   <div id="view-airmf-intro" class="view" aria-hidden="true">
     <header class="app-header">
       <div class="app-header-titles">
-        <h1>aiRMF</h1>
-        <p class="page-subtitle">AI Readiness and Management Framework</p>
+        <h1>Welcome to the aiRMF interactive guide.</h1>
       </div>
     </header>
     <div class="view-body intro-body">
-      <p class="intro-lede">
-        Identify where AI creates value and shape a focused path forward.
-      </p>
       <div class="intro-columns">
-        <section class="intro-steps" aria-labelledby="intro-steps-heading">
-          <h2 class="intro-section-heading" id="intro-steps-heading">How to use this experience</h2>
-          <ol class="step-list">
-            <li>Choose an outcome to explore.</li>
-            <li>Review recommended aiRMF capabilities.</li>
-            <li>Star capabilities to build your AI Focus Map.</li>
-          </ol>
+        <section class="intro-about" aria-label="About aiRMF">
+          <p class="intro-lede">
+            aiRMF is made up of 9 capabilities that help organizations understand the core activities needed to implement and mature AI across the enterprise.
+          </p>
+          <h2 class="intro-support-heading">We support organizations in:</h2>
+          <ul class="intro-support-list" aria-label="How aiRMF supports organizations">
+            <li class="intro-support-card">
+              <span class="intro-support-icon" aria-hidden="true"></span>
+              <span class="intro-support-text">Assessing their current AI capabilities</span>
+            </li>
+            <li class="intro-support-card">
+              <span class="intro-support-icon" aria-hidden="true"></span>
+              <span class="intro-support-text">Defining target outcomes</span>
+            </li>
+            <li class="intro-support-card">
+              <span class="intro-support-icon" aria-hidden="true"></span>
+              <span class="intro-support-text">Charting a path forward in a rapidly evolving landscape</span>
+            </li>
+          </ul>
+          <p class="intro-closing">
+            Whether you&rsquo;re exploring, building, scaling, or adopting AI, aiRMF provides the structure and support to help you move forward.
+          </p>
         </section>
-        <section class="guided-entry" aria-labelledby="guided-entry-heading">
-          <h2 class="guided-entry-heading" id="guided-entry-heading">
-            Where do you see the most immediate AI opportunity?
-          </h2>
-          <p class="guided-entry-helper" id="guided-entry-helper"></p>
-          <div id="guided-entry-host" class="guided-entry-buttons" role="group" aria-label="Opportunity area"></div>
+        <section class="intro-visual-panel" aria-labelledby="intro-actions-heading">
+          <div class="intro-actions-block">
+            <p class="intro-actions-label" id="intro-actions-heading">How would you like to begin?</p>
+            <button type="button" id="btn-explore-freely" class="intro-path-card intro-path-card--explore">
+              <span class="intro-path-card-text">
+                <strong>Explore Freely</strong>
+                <span>Browse the full set of capabilities and navigate based on your areas of interest</span>
+              </span>
+              <span class="intro-path-chevron" aria-hidden="true">›</span>
+            </button>
+            <button type="button" id="btn-guided-experience" class="intro-path-card intro-path-card--guided">
+              <span class="intro-path-card-text">
+                <strong>Guided Experience</strong>
+                <span>Answer a question to highlight capabilities relevant to your current focus</span>
+              </span>
+              <span class="intro-path-chevron" aria-hidden="true">›</span>
+            </button>
+          </div>
         </section>
       </div>
     </div>
-    <footer class="view-footer">
-      <button type="button" class="btn btn-ghost btn-clear" id="btn-intro-home">Exit Experience</button>
-      <button type="button" id="btn-to-explore" class="btn btn-primary btn-large">
-        Continue to Capability Map
-      </button>
-    </footer>
   </div>
 
-  <!-- aiRMF Capability Map: 4×2 card grid fits all eight capabilities on
-       one screen; all interactive controls live in the bottom footer for
-       reach. -->
+  <!-- aiRMF Capability Map: left domain filters + right-offset wheel. -->
   <div id="view-explore" class="view" aria-hidden="true">
-    <header class="app-header">
+    <header class="app-header explore-header">
       <div class="app-header-titles">
-        <h1>aiRMF Capability Map</h1>
-        <p class="map-intro-lede">Open a capability for details. Star the ones to carry forward.</p>
+        <h1>Welcome to aiRMF</h1>
       </div>
-      <p class="session-hint header-meta" id="explore-session-display" aria-label="Kiosk session identifier"></p>
       <!-- Kept in the DOM so the existing JS getElementById()+addEventListener()
-           wiring for the original header-twin buttons does not throw. The
-           visible/functional instances live in the view footer below. -->
+           wiring for the original header-twin buttons does not throw. -->
       <div class="header-actions header-actions--hidden" aria-hidden="true">
         <button type="button" class="btn btn-ghost btn-clear" id="btn-clear-selections" hidden>Clear selections</button>
         <button type="button" class="btn btn-primary" id="btn-to-focus" disabled aria-disabled="true">View AI Focus Map</button>
       </div>
     </header>
     <div class="view-body explore-body">
-      <p class="map-recommend-note" id="map-recommend-note" hidden>
-        Recommended capabilities highlighted from your focus area.
-      </p>
-      <div id="explore-card-host" class="card-grid"></div>
+      <div class="explore-map-layout">
+        <aside class="explore-sidebar" aria-label="Capability map filters">
+          <h2 class="explore-sidebar-intro-heading">Introduction + How to</h2>
+          <p class="explore-sidebar-intro">
+            Use the compass to explore capabilities. Tap a capability to learn more, then star the ones you want to save to your inventory.
+          </p>
+          <div class="map-journey-context" id="map-journey-context" hidden>
+            <div class="map-journey-context-header">
+              <span class="map-journey-context-eyebrow">Your AI journey</span>
+              <button type="button" class="btn-journey-edit" id="btn-edit-journey">Edit</button>
+            </div>
+            <p class="map-journey-context-value" id="map-journey-context-value"></p>
+            <p class="map-journey-context-hint">Green rings and &ldquo;Suggested&rdquo; labels mark capabilities for your journey. Domain filters below only dim unrelated areas.</p>
+          </div>
+          <h2 class="explore-sidebar-filters-heading">Filter by domain</h2>
+          <div id="explore-category-filters" class="explore-category-filters" role="group" aria-label="Filter capabilities by domain"></div>
+        </aside>
+        <div class="explore-wheel-panel">
+          <div class="wheel-stage">
+            <div class="wheel-artboard">
+              <img
+                class="wheel-stage-image"
+                src="assets/airmf-wheel.png"
+                width="1024"
+                height="970"
+                alt=""
+                decoding="async"
+              />
+              <div id="explore-card-host" class="wheel-targets" role="group" aria-label="aiRMF capabilities"></div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-    <footer class="view-footer" aria-label="Capability Map actions">
+    <footer class="view-footer explore-footer" aria-label="Capability Map actions">
       <button type="button" class="btn btn-ghost" id="btn-back-to-intro">Back to aiRMF intro</button>
-      <span class="capability-map-footer-status view-footer-status" id="capability-map-footer-status" aria-live="polite">No capabilities selected</span>
       <div class="view-footer-actions">
         <button type="button" class="btn btn-ghost btn-clear" id="btn-clear-selections-footer" hidden>
           Clear selections
@@ -1419,35 +2947,24 @@
     </footer>
   </div>
 
-  <!-- Capability detail modal — populated by openCapabilityModal().
-       Kiosk layout: title + description on top, 2-column sections in
-       the scrollable body, and ALL actions (close, pager, select) in
-       the bottom footer so a seated visitor can reach every control. -->
+  <!-- Capability detail modal — work-area layout populated by openCapabilityModal(). -->
   <div id="capability-modal" class="modal-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="modal-title">
     <div class="modal-content">
-      <header class="modal-header">
-        <h2 class="modal-title" id="modal-title"></h2>
-        <p class="modal-description" id="modal-description"></p>
+      <div class="modal-topbar">
         <p class="modal-recommend-context" id="modal-recommend-context" hidden>
           <span>Recommended for:</span>
           <span class="modal-recommend-context-priority" id="modal-recommend-context-priority"></span>
         </p>
-      </header>
-      <div class="modal-body">
-        <div class="modal-sections">
-          <section class="modal-section">
-            <h3>Why it matters</h3>
-            <p id="modal-why"></p>
-          </section>
-          <section class="modal-section">
-            <h3>Example use cases</h3>
-            <ul id="modal-examples"></ul>
-          </section>
-          <section class="modal-section modal-section--wide">
-            <h3>Implementation notes</h3>
-            <p id="modal-implementation"></p>
-          </section>
+        <div class="modal-topbar-actions">
+          <button type="button" id="modal-toggle-btn" class="btn btn-star modal-topbar-star" aria-pressed="false" aria-label="Star capability">★</button>
+          <button type="button" id="modal-close-btn" class="modal-topbar-close" aria-label="Close capability details">×</button>
         </div>
+      </div>
+      <div class="modal-body" id="modal-body">
+        <div id="modal-overview-host"></div>
+        <hr class="modal-divider" aria-hidden="true" />
+        <div class="modal-work-area-nav" id="modal-work-tabs-host"></div>
+        <div id="modal-work-details-host" class="modal-work-details"></div>
       </div>
       <footer class="modal-footer">
         <nav class="modal-pager" aria-label="Capability navigation">
@@ -1455,18 +2972,54 @@
           <span class="modal-position" id="modal-position" aria-live="polite"></span>
           <button type="button" id="modal-next-btn" class="btn btn-ghost" aria-label="Next capability">Next →</button>
         </nav>
-        <div class="modal-actions">
-          <span class="modal-status" id="modal-status" aria-live="polite"></span>
-          <button type="button" id="modal-close-btn" class="modal-close" aria-label="Close capability details">Close</button>
-          <button type="button" id="modal-toggle-btn" class="btn btn-primary btn-large"></button>
-        </div>
       </footer>
     </div>
   </div>
 
-  <!-- Persistent prototype disclaimer: one fixed bottom-right element shown
-       across every view. Replaces the per-view duplicates that previously
-       repeated this line on each screen. -->
+  <!-- Capability preview: intermediate step before the detail modal. -->
+  <div id="capability-preview" class="preview-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="preview-title">
+    <div class="preview-content">
+      <button type="button" id="preview-close-btn" class="preview-close-fab" aria-label="Close preview">×</button>
+      <div class="preview-art" aria-hidden="true"></div>
+      <div class="preview-body">
+        <p class="preview-category" id="preview-category"></p>
+        <h2 class="preview-title" id="preview-title"></h2>
+        <p class="preview-description" id="preview-description"></p>
+        <div class="preview-actions">
+          <button type="button" id="preview-learn-more-btn" class="btn btn-primary btn-large">Learn More</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Guided Experience: journey question (left) + map or recommendations (right). -->
+  <div id="guided-experience-overlay" class="guided-overlay" hidden data-guided-step="question" role="dialog" aria-modal="true" aria-labelledby="guided-entry-heading">
+    <div class="guided-panel guided-panel--question" id="guided-panel-question">
+      <section class="guided-entry guided-entry--overlay" aria-labelledby="guided-entry-heading">
+        <h2 class="guided-entry-heading" id="guided-entry-heading">
+          Where are you on your AI journey?
+        </h2>
+        <p class="guided-entry-sub">Choose one:</p>
+        <div id="guided-entry-host" class="guided-entry-buttons" role="group" aria-label="AI journey stage"></div>
+      </section>
+    </div>
+    <div class="guided-panel guided-panel--map-scrim" id="guided-panel-map-scrim" aria-hidden="true">
+      <button type="button" id="btn-explore-freely-overlay" class="btn btn-explore-freely-escape">
+        Explore Freely
+      </button>
+    </div>
+    <div class="guided-panel guided-panel--recommendations" id="guided-panel-recommendations" aria-labelledby="guided-recommendations-heading">
+      <h2 class="guided-recommendations-heading" id="guided-recommendations-heading">
+        We recommend exploring these aiRMF capabilities
+      </h2>
+      <div id="guided-recommendations-host" class="guided-recommendation-cards" role="list"></div>
+      <button type="button" id="btn-explore-freely-guided" class="btn-explore-freely-guided">
+        Explore Freely
+      </button>
+    </div>
+  </div>
+
+  <!-- Persistent prototype disclaimer: fixed top-right across every view. -->
   <p class="spike-disclaimer" role="note">Technical feasibility spike — not production software.</p>
 
   <!-- Toast: transient confirmation for selection / clear actions. -->
@@ -1731,12 +3284,257 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
     /* -------------------------------------------------------------------------- */
 
     var currentModalCapabilityId = null;
+    var currentModalWorkAreaId = null;
     var lastFocusedCapabilityId = null;
+    var currentPreviewCapabilityId = null;
 
-    /** Populate the modal's content (title, description, sections, pager,
-     *  status, toggle) for a given capability. Also marks it Viewed and
-     *  remembers it as the focus-restore target on close. Used both when
-     *  opening the modal fresh and when paging Prev/Next inside it. */
+    function getCategoryLabel(categoryId) {
+      for (var c = 0; c < CAPABILITY_CATEGORIES.length; c++) {
+        if (CAPABILITY_CATEGORIES[c].id === categoryId) {
+          return CAPABILITY_CATEGORIES[c].label;
+        }
+      }
+      return "";
+    }
+
+    function openCapabilityPreview(capabilityId) {
+      var cap = capabilityById(capabilityId);
+      if (!cap) return;
+      currentPreviewCapabilityId = capabilityId;
+      lastFocusedCapabilityId = capabilityId;
+      markCapabilityViewed(capabilityId);
+
+      document.getElementById("preview-title").textContent = cap.title;
+      document.getElementById("preview-description").textContent = cap.description;
+      document.getElementById("preview-category").textContent = getCategoryLabel(cap.category);
+
+      var overlay = document.getElementById("capability-preview");
+      overlay.hidden = false;
+      renderExploreView();
+
+      setTimeout(function () {
+        var closeBtn = document.getElementById("preview-close-btn");
+        if (closeBtn) closeBtn.focus();
+      }, 0);
+    }
+
+    function closeCapabilityPreview() {
+      var overlay = document.getElementById("capability-preview");
+      if (!overlay || overlay.hidden) return;
+      overlay.hidden = true;
+      currentPreviewCapabilityId = null;
+
+      if (lastFocusedCapabilityId) {
+        var hit = document.querySelector(
+          '.wheel-target[data-capability-id="' + lastFocusedCapabilityId + '"] .wheel-target-hit'
+        );
+        if (hit && typeof hit.focus === "function") hit.focus();
+        lastFocusedCapabilityId = null;
+      }
+    }
+
+    function handlePreviewLearnMore() {
+      if (!currentPreviewCapabilityId) return;
+      var id = currentPreviewCapabilityId;
+      currentPreviewCapabilityId = null;
+      document.getElementById("capability-preview").hidden = true;
+      openCapabilityModal(id);
+    }
+
+    /** Work areas for modal rendering; falls back to a single area from legacy fields. */
+    function getCapabilityWorkAreas(cap) {
+      if (cap.workAreas && cap.workAreas.length > 0) {
+        return cap.workAreas;
+      }
+      return [{
+        id: cap.id + "-focus",
+        title: "Key focus",
+        subtitle: cap.description || "",
+        helpsWith: cap.keyWorkAreas || [],
+        provides: cap.potentialValue ? [cap.potentialValue] : []
+      }];
+    }
+
+    function appendWorkAreaPanel(parent, headingText, items) {
+      var panel = document.createElement("div");
+      panel.className = "modal-work-panel";
+
+      var heading = document.createElement("h4");
+      heading.className = "modal-work-panel-heading";
+      heading.textContent = headingText;
+      panel.appendChild(heading);
+
+      var list = document.createElement("ul");
+      list.className = "modal-work-panel-list";
+      for (var i = 0; i < items.length; i++) {
+        var li = document.createElement("li");
+        li.textContent = items[i];
+        list.appendChild(li);
+      }
+      panel.appendChild(list);
+      parent.appendChild(panel);
+    }
+
+    function renderCapabilityOverview(cap, container) {
+      container.innerHTML = "";
+
+      var overview = document.createElement("div");
+      overview.className = "modal-overview";
+
+      var art = document.createElement("div");
+      art.className = "modal-overview-art";
+      art.setAttribute("aria-hidden", "true");
+
+      var main = document.createElement("div");
+      main.className = "modal-overview-main";
+
+      var title = document.createElement("h2");
+      title.className = "modal-title";
+      title.id = "modal-title";
+      title.textContent = cap.title;
+      main.appendChild(title);
+
+      var introText = cap.overviewIntro || cap.overview || cap.description || "";
+      if (introText) {
+        var lede = document.createElement("p");
+        lede.className = "modal-overview-lede";
+        lede.textContent = introText;
+        main.appendChild(lede);
+      }
+
+      var bullets = cap.overviewBullets || [];
+      if (bullets.length > 0) {
+        var ul = document.createElement("ul");
+        ul.className = "modal-overview-bullets";
+        for (var b = 0; b < bullets.length; b++) {
+          var bullet = document.createElement("li");
+          bullet.textContent = bullets[b];
+          ul.appendChild(bullet);
+        }
+        main.appendChild(ul);
+      }
+
+      var caseStudy = document.createElement("button");
+      caseStudy.type = "button";
+      caseStudy.className = "modal-case-study-cta";
+      caseStudy.textContent = "Explore Case Study ›";
+      caseStudy.disabled = true;
+      caseStudy.setAttribute("aria-label", "Explore case study (coming soon)");
+
+      overview.appendChild(art);
+      overview.appendChild(main);
+      overview.appendChild(caseStudy);
+      container.appendChild(overview);
+    }
+
+    function renderWorkAreaTabs(workAreas, activeId, container) {
+      container.innerHTML = "";
+
+      var tabs = document.createElement("div");
+      tabs.className = "modal-work-tabs";
+      tabs.setAttribute("role", "tablist");
+      tabs.setAttribute("aria-label", "Work areas");
+
+      for (var i = 0; i < workAreas.length; i++) {
+        var area = workAreas[i];
+        var tab = document.createElement("button");
+        tab.type = "button";
+        tab.className = "modal-work-tab" + (area.id === activeId ? " is-active" : "");
+        tab.dataset.workAreaId = area.id;
+        tab.setAttribute("role", "tab");
+        tab.setAttribute("aria-selected", area.id === activeId ? "true" : "false");
+        tab.setAttribute("aria-controls", "modal-work-detail-panel");
+        tab.id = "work-area-tab-" + area.id;
+
+        var marker = document.createElement("span");
+        marker.className = "modal-work-tab-marker";
+        marker.setAttribute("aria-hidden", "true");
+        tab.appendChild(marker);
+
+        var label = document.createElement("span");
+        label.textContent = area.title;
+        tab.appendChild(label);
+
+        tab.addEventListener("click", function (id) {
+          return function () {
+            selectModalWorkArea(id);
+          };
+        }(area.id));
+
+        tabs.appendChild(tab);
+      }
+
+      container.appendChild(tabs);
+    }
+
+    function findWorkAreaById(workAreas, workAreaId) {
+      for (var i = 0; i < workAreas.length; i++) {
+        if (workAreas[i].id === workAreaId) return workAreas[i];
+      }
+      return workAreas.length > 0 ? workAreas[0] : null;
+    }
+
+    function renderWorkAreaDetail(workArea, container) {
+      container.innerHTML = "";
+
+      var heading = document.createElement("h3");
+      heading.className = "modal-work-detail-title";
+      heading.textContent = workArea.title;
+      container.appendChild(heading);
+
+      if (workArea.subtitle) {
+        var subtitle = document.createElement("p");
+        subtitle.className = "modal-work-detail-subtitle";
+        subtitle.textContent = workArea.subtitle;
+        container.appendChild(subtitle);
+      }
+
+      var panels = document.createElement("div");
+      panels.className = "modal-work-panels";
+      appendWorkAreaPanel(panels, "We Can Help You To:", workArea.helpsWith || []);
+      appendWorkAreaPanel(panels, "This Provides You With:", workArea.provides || []);
+      container.appendChild(panels);
+    }
+
+    /** Renders a single work area detail panel for the active tab selection. */
+    function renderSelectedWorkAreaDetail(capability, selectedWorkAreaId, container) {
+      var workAreas = getCapabilityWorkAreas(capability);
+      var workArea = findWorkAreaById(workAreas, selectedWorkAreaId);
+      container.innerHTML = "";
+      if (!workArea) return;
+
+      var panel = document.createElement("section");
+      panel.className = "modal-work-detail";
+      panel.id = "modal-work-detail-panel";
+      panel.setAttribute("role", "tabpanel");
+      panel.setAttribute("aria-labelledby", "work-area-tab-" + workArea.id);
+      renderWorkAreaDetail(workArea, panel);
+      container.appendChild(panel);
+    }
+
+    function selectModalWorkArea(workAreaId) {
+      var cap = capabilityById(currentModalCapabilityId);
+      if (!cap) return;
+
+      currentModalWorkAreaId = workAreaId;
+
+      var tabsHost = document.getElementById("modal-work-tabs-host");
+      if (tabsHost) {
+        var tabs = tabsHost.querySelectorAll(".modal-work-tab");
+        for (var i = 0; i < tabs.length; i++) {
+          var active = tabs[i].dataset.workAreaId === workAreaId;
+          tabs[i].classList.toggle("is-active", active);
+          tabs[i].setAttribute("aria-selected", active ? "true" : "false");
+        }
+      }
+
+      var detailsHost = document.getElementById("modal-work-details-host");
+      if (detailsHost) {
+        renderSelectedWorkAreaDetail(cap, workAreaId, detailsHost);
+      }
+    }
+
+    /** Populate the modal's overview, work areas, pager, and star state. */
     function loadCapabilityIntoModal(capabilityId) {
       var cap = capabilityById(capabilityId);
       if (!cap) return;
@@ -1745,25 +3543,17 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
 
       markCapabilityViewed(capabilityId);
 
-      document.getElementById("modal-title").textContent = cap.title;
-      document.getElementById("modal-description").textContent = cap.description;
-      document.getElementById("modal-why").textContent = cap.whyItMatters || "";
-      document.getElementById("modal-implementation").textContent = cap.implementationNotes || "";
+      var workAreas = getCapabilityWorkAreas(cap);
+      currentModalWorkAreaId = workAreas[0].id;
 
-      var examplesEl = document.getElementById("modal-examples");
-      examplesEl.innerHTML = "";
-      var examples = cap.exampleUseCases || [];
-      for (var i = 0; i < examples.length; i++) {
-        var li = document.createElement("li");
-        li.textContent = examples[i];
-        examplesEl.appendChild(li);
-      }
+      var overviewHost = document.getElementById("modal-overview-host");
+      var tabsHost = document.getElementById("modal-work-tabs-host");
+      var detailsHost = document.getElementById("modal-work-details-host");
 
-      // Surface the *why this is on your radar* context that the card pill
-      // can't fit: name the priority that triggered the recommendation.
-      // Only shown when the current capability is mapped to the visitor's
-      // active guided-question response — otherwise the line is hidden and
-      // collapses out of layout (display: none via the [hidden] selector).
+      if (overviewHost) renderCapabilityOverview(cap, overviewHost);
+      if (tabsHost) renderWorkAreaTabs(workAreas, currentModalWorkAreaId, tabsHost);
+      if (detailsHost) renderSelectedWorkAreaDetail(cap, currentModalWorkAreaId, detailsHost);
+
       var recommendEl = document.getElementById("modal-recommend-context");
       var priorityEl = document.getElementById("modal-recommend-context-priority");
       if (recommendEl && priorityEl) {
@@ -1782,6 +3572,9 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
           recommendEl.hidden = true;
         }
       }
+
+      var body = document.getElementById("modal-body");
+      if (body) body.scrollTop = 0;
 
       updateModalSelectionState();
       updateModalNavState();
@@ -1817,7 +3610,7 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
       return -1;
     }
 
-    /** Update the modal pager: position label ("3 of 8") + disabled state
+    /** Update the modal pager: position label ("3 of 9") + disabled state
      *  for the Prev/Next buttons at the ends of the list. */
     function updateModalNavState() {
       var idx = getCurrentCapabilityIndex();
@@ -1853,8 +3646,8 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
       loadCapabilityIntoModal(CAPABILITIES[nextIdx].id);
       renderExploreView();
 
-      var content = document.querySelector("#capability-modal .modal-content");
-      if (content) content.scrollTop = 0;
+      var body = document.getElementById("modal-body");
+      if (body) body.scrollTop = 0;
 
       var preferredId = delta < 0 ? "modal-prev-btn" : "modal-next-btn";
       var preferred = document.getElementById(preferredId);
@@ -1901,37 +3694,37 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
       document.body.style.overflow = "";
       currentModalCapabilityId = null;
 
-      // Return focus to the originating card. The card was re-rendered when
-      // the modal opened, so look it up by data-capability-id rather than
-      // holding a stale DOM reference.
+      // Return focus to the originating touch target (re-rendered on open).
       if (lastFocusedCapabilityId) {
-        var card = document.querySelector(
-          '.cap-card[data-capability-id="' + lastFocusedCapabilityId + '"]'
+        var hit = document.querySelector(
+          '.wheel-target[data-capability-id="' + lastFocusedCapabilityId + '"] .wheel-target-hit'
         );
-        if (card && typeof card.focus === "function") card.focus();
+        if (hit && typeof hit.focus === "function") hit.focus();
         lastFocusedCapabilityId = null;
       }
     }
 
-    /** Refresh the modal status line + toggle button label after a selection
-     *  change. Copy uses the same star metaphor as the card's ★ button and
-     *  the intro's "Star capabilities…" priming, so the action verb is
-     *  consistent across the experience. */
+    /** Refresh the modal's star toggle after a selection change. The control
+     *  is the same .btn-star icon that lives in the card footer, so this
+     *  function mirrors the card's star wiring exactly:
+     *    - aria-pressed flips → screen readers announce the state change
+     *      and the [aria-pressed="true"] CSS rule paints the amber filled
+     *      state (no class toggling needed)
+     *    - aria-label rewrites with the capability title so SR users hear
+     *      "Star [title]" / "Remove star from [title]" — matching the
+     *      card's aria-label vocabulary verbatim. */
     function updateModalSelectionState() {
       if (!currentModalCapabilityId) return;
-      var statusEl = document.getElementById("modal-status");
       var toggleBtn = document.getElementById("modal-toggle-btn");
+      if (!toggleBtn) return;
+      var cap = capabilityById(currentModalCapabilityId);
       var selected = isSelected(currentModalCapabilityId);
-      if (statusEl) {
-        statusEl.textContent = selected ? "Starred." : "Not starred.";
-      }
-      if (toggleBtn) {
-        toggleBtn.textContent = selected
-          ? "Remove star"
-          : "Star this capability";
-        // Visually de-emphasize the action when it's a removal.
-        toggleBtn.classList.toggle("btn-primary", !selected);
-        toggleBtn.classList.toggle("btn-ghost", selected);
+      toggleBtn.setAttribute("aria-pressed", selected ? "true" : "false");
+      if (cap) {
+        toggleBtn.setAttribute(
+          "aria-label",
+          (selected ? "Remove star from " : "Star ") + cap.title
+        );
       }
     }
 
@@ -1959,44 +3752,185 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
     /* -------------------------------------------------------------------------- */
 
     var QUESTION_RESPONSES = [
-      { id: "efficiency", label: "Improve efficiency of internal operations" },
-      { id: "customer",   label: "Enhance customer interactions and service" },
-      { id: "insights",   label: "Strengthen decision-making and insights" },
-      { id: "risk",       label: "Reduce risk and improve compliance" }
+      {
+        id: "exploring",
+        label: "We're exploring",
+        description: "We're identifying where AI can advance our mission and want to understand our options, ROI, and starting points."
+      },
+      {
+        id: "scaling",
+        label: "We're scaling",
+        description: "We have AI solutions and need to operationalize, maintain, and expand it reliably."
+      },
+      {
+        id: "adopting",
+        label: "We're adopting",
+        description: "We are looking for our people and organization to embrace and use AI effectively."
+      },
+      {
+        id: "building",
+        label: "We're building",
+        description: "We have a use case and are ready to design, develop, or deploy an AI solution."
+      }
     ];
 
     /**
-     * Maps each response id to capability ids in the aiRMF-inspired catalog.
+     * Single source of truth: journey stage → recommended capability ids.
      * Highlighting is purely advisory — only manually starred capabilities end
      * up in selectedCapabilities (and therefore the Focus map and the
      * stateless QR URL). Recommended-but-unstarred items are never encoded.
      */
-    var QUESTION_TO_CAPABILITIES = {
-      efficiency: ["operational-efficiency", "content-processing", "workflow-intelligence"],
-      customer:   ["customer-support", "content-processing", "knowledge-discovery"],
-      insights:   ["decision-support", "knowledge-discovery", "workflow-intelligence"],
-      risk:       ["risk-monitoring", "governance-support", "workflow-intelligence"]
+    var JOURNEY_RECOMMENDATIONS = {
+      exploring: ["ai-exploration", "ai-strategy-governance"],
+      building:  ["ai-agents-development", "ai-infrastructure-platforms", "trusted-secure-ai"],
+      scaling:   ["ai-delivery-operations", "trusted-secure-ai", "data-readiness"],
+      adopting:  ["ai-users-adoption", "ai-enabled-workforce"]
     };
 
     var selectedQuestionResponse = null;
+    var guidedExperienceStep = "question";
+
+    function updateGuidedOverlayStep() {
+      var overlay = document.getElementById("guided-experience-overlay");
+      if (!overlay) return;
+      overlay.dataset.guidedStep = guidedExperienceStep;
+      overlay.setAttribute(
+        "aria-labelledby",
+        guidedExperienceStep === "recommendations"
+          ? "guided-recommendations-heading"
+          : "guided-entry-heading"
+      );
+    }
 
     /**
-     * Toggle behavior: re-clicking the active response clears it.
-     * Lives on the intro view, but also drives the Capability Map's
-     * "Recommended" highlights and recommend note. We refresh both surfaces
-     * here so navigating forward always reflects the latest priority.
+     * After a journey answer: keep the question panel visible on the left and
+     * show recommendation cards on the right. Changing the answer updates
+     * recommendations and wheel highlights.
      */
     function selectQuestionResponse(responseId) {
-      selectedQuestionResponse =
-        selectedQuestionResponse === responseId ? null : responseId;
-      renderGuidedEntry();   // refresh aria-pressed + helper copy
-      renderExploreView();   // pre-apply recommended state to cards
+      selectedQuestionResponse = responseId;
+      guidedExperienceStep = "recommendations";
+      renderGuidedExperience();
+      renderGuidedRecommendations();
+      updateGuidedOverlayStep();
+      renderExploreView();
+    }
+
+    function showGuidedExperienceOverlay() {
+      var overlay = document.getElementById("guided-experience-overlay");
+      if (!overlay) return;
+      selectedQuestionResponse = null;
+      guidedExperienceStep = "question";
+      renderGuidedExperience();
+      renderGuidedRecommendations();
+      updateGuidedOverlayStep();
+      renderExploreView();
+      overlay.hidden = false;
+      setTimeout(function () {
+        var first = overlay.querySelector(".btn-response");
+        if (first) first.focus();
+      }, 0);
+    }
+
+    /** Reopen guided overlay to change journey answer (soft-landing edit). */
+    function openGuidedExperienceForEdit() {
+      var overlay = document.getElementById("guided-experience-overlay");
+      if (!overlay) return;
+      guidedExperienceStep = selectedQuestionResponse ? "recommendations" : "question";
+      renderGuidedExperience();
+      renderGuidedRecommendations();
+      updateGuidedOverlayStep();
+      renderExploreView();
+      overlay.hidden = false;
+      setTimeout(function () {
+        var active = overlay.querySelector('.btn-response[aria-pressed="true"]');
+        var focusTarget = active || overlay.querySelector(".btn-response");
+        if (focusTarget) focusTarget.focus();
+      }, 0);
+    }
+
+    function hideGuidedExperienceOverlay() {
+      var overlay = document.getElementById("guided-experience-overlay");
+      if (overlay) overlay.hidden = true;
+      guidedExperienceStep = "question";
+      updateGuidedOverlayStep();
+    }
+
+    /** Hard reset: clears journey answer, highlights, and sidebar recommend note. */
+    function clearGuidedJourneyState() {
+      selectedQuestionResponse = null;
+      guidedExperienceStep = "question";
+      hideGuidedExperienceOverlay();
+      renderGuidedExperience();
+      renderGuidedRecommendations();
+      renderExploreView();
+    }
+
+    /**
+     * Soft landing: dismiss the guided overlay but keep the journey answer,
+     * wheel highlights, and sidebar recommend note so free exploration
+     * continues with advisory context.
+     */
+    function dismissGuidedOverlaySoftLanding() {
+      guidedExperienceStep = "question";
+      hideGuidedExperienceOverlay();
+      renderGuidedExperience();
+      renderGuidedRecommendations();
+      renderExploreView();
     }
 
     function isCapabilityRecommended(capabilityId) {
       if (!selectedQuestionResponse) return false;
-      var mapped = QUESTION_TO_CAPABILITIES[selectedQuestionResponse] || [];
+      var mapped = JOURNEY_RECOMMENDATIONS[selectedQuestionResponse] || [];
       return mapped.indexOf(capabilityId) !== -1;
+    }
+
+    function isWheelTargetEmphasized(cap) {
+      if (selectedCategoryFilter && cap.category !== selectedCategoryFilter) return false;
+      return !!selectedCategoryFilter;
+    }
+
+    function isWheelTargetDimmed(cap) {
+      return !!selectedCategoryFilter && cap.category !== selectedCategoryFilter;
+    }
+
+    function selectCategoryFilter(categoryId) {
+      selectedCategoryFilter =
+        selectedCategoryFilter === categoryId ? null : categoryId;
+      renderExploreView();
+    }
+
+    function renderCategoryFilters() {
+      var host = document.getElementById("explore-category-filters");
+      if (!host) return;
+      host.innerHTML = "";
+      for (var i = 0; i < CAPABILITY_CATEGORIES.length; i++) {
+        var cat = CAPABILITY_CATEGORIES[i];
+        var active = selectedCategoryFilter === cat.id;
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "explore-category-filter" + (active ? " is-active" : "");
+        btn.dataset.category = cat.id;
+        btn.setAttribute("aria-pressed", active ? "true" : "false");
+
+        var title = document.createElement("span");
+        title.className = "explore-category-filter-title";
+        title.textContent = cat.label;
+        btn.appendChild(title);
+
+        var desc = document.createElement("span");
+        desc.className = "explore-category-filter-desc";
+        desc.textContent = cat.filterDescription;
+        btn.appendChild(desc);
+
+        btn.addEventListener("click", function (id) {
+          return function () {
+            selectCategoryFilter(id);
+          };
+        }(cat.id));
+
+        host.appendChild(btn);
+      }
     }
 
     /* -------------------------------------------------------------------------- */
@@ -2041,107 +3975,222 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
     }
 
     /**
-     * Static catalog for the spike — strategic, aiRMF-inspired groupings.
-     * Names are illustrative for this demo, not an official aiRMF taxonomy.
-     * Each entry carries the extra detail surfaced in the capability modal:
-     * whyItMatters, exampleUseCases, implementationNotes.
+     * aiRMF capability model — three categories, nine capabilities.
+     * Placeholder modal content for stakeholder review.
      */
+    var CAPABILITY_CATEGORIES = [
+      {
+        id: "foundations",
+        label: "AI Foundations",
+        count: 3,
+        filterDescription: "Learn about making data trusted, governance, and AI security."
+      },
+      {
+        id: "development",
+        label: "AI Development & Integration",
+        count: 4,
+        filterDescription: "Explore ways to implement AI agents, tools for delivery, and how to build and scale your infrastructure."
+      },
+      {
+        id: "adoption",
+        label: "AI Adoption & Enablement",
+        count: 2,
+        filterDescription: "Embark on a road to empower your workforce to use AI and how to rollout systems in your organization."
+      }
+    ];
+
+    /** Active domain filter on the Capability Map; null shows all domains. */
+    var selectedCategoryFilter = null;
+
     var CAPABILITIES = [
       {
-        id: "operational-efficiency",
-        title: "Operational Efficiency & Automation",
-        description: "Reduce repetitive manual work and streamline common internal processes.",
-        whyItMatters: "Repetitive work consumes capacity that could be applied to higher-judgment activities. Targeted automation reduces cycle time, improves consistency, and lets staff focus where their experience matters most.",
-        exampleUseCases: [
-          "Auto-populate onboarding forms from uploaded documents",
-          "Generate weekly status reports from project tracking data",
-          "Categorize and pre-triage inbound email or support tickets"
+        id: "ai-strategy-governance",
+        category: "foundations",
+        title: "AI Strategy & Governance",
+        description: "Define AI direction, priorities, and accountable oversight across the organization.",
+        overview: "A clear AI strategy aligns investment with business outcomes while governance ensures responsible use. This capability establishes the policies, roles, and decision rights that guide every AI initiative.",
+        keyWorkAreas: [
+          "AI vision and roadmap alignment",
+          "Governance councils and policy frameworks",
+          "Risk appetite and ethical use standards"
         ],
-        implementationNotes: "Best applied to well-defined processes with clear inputs and outputs. Pair with human review checkpoints for edge cases and unusual inputs."
+        potentialValue: "Reduces fragmented pilots, improves executive confidence, and creates a repeatable path from exploration to scale."
       },
       {
-        id: "content-processing",
-        title: "Content Processing & Summarization",
-        description: "Turn long, complex, or unstructured information into concise, usable summaries.",
-        whyItMatters: "Knowledge workers spend significant time reading and synthesizing source material. Distilling long documents into structured summaries accelerates decision-making without losing nuance.",
-        exampleUseCases: [
-          "Summarize meeting transcripts into action items and decisions",
-          "Extract key terms from contracts, policies, and SOPs",
-          "Condense long customer feedback threads into themes"
+        id: "trusted-secure-ai",
+        category: "foundations",
+        title: "Trusted & Secure AI",
+        description: "Protect data, models, and users while building confidence in AI outcomes.",
+        overview: "Trust and security are prerequisites for adoption at scale. This capability covers model safety, access controls, monitoring, and transparency practices that keep AI systems dependable.",
+        keyWorkAreas: [
+          "Model risk and safety review",
+          "Data protection and access management",
+          "Monitoring, audit trails, and incident response"
         ],
-        implementationNotes: "Validate AI summaries against the source whenever accuracy materially affects the decision. Establish summary length and style conventions per audience."
+        potentialValue: "Lowers compliance exposure, accelerates approval cycles, and helps teams deploy AI with stakeholder assurance."
       },
       {
-        id: "workflow-intelligence",
-        title: "Process Routing & Workflow Intelligence",
-        description: "Classify, route, and prioritize requests so work reaches the right people faster.",
-        whyItMatters: "Misrouted or low-priority work creates downstream delays and frustrated requesters. Intelligent routing places items in front of the right person at the right time.",
-        exampleUseCases: [
-          "Route incoming service tickets to the appropriate team",
-          "Flag time-sensitive requests for immediate attention",
-          "Direct vendor invoices to the correct approver based on category"
+        id: "data-readiness",
+        category: "foundations",
+        title: "Data Readiness",
+        description: "Ensure data quality, accessibility, and lineage support reliable AI solutions.",
+        overview: "AI outcomes depend on data that is accurate, well-governed, and available where it is needed. Data readiness spans cataloging, quality, integration, and stewardship.",
+        keyWorkAreas: [
+          "Data quality and lineage practices",
+          "Feature and dataset management",
+          "Integration across operational systems"
         ],
-        implementationNotes: "Define routing rules and exception paths before automating. Monitor edge cases and provide easy manual override for ambiguous items."
+        potentialValue: "Shortens time-to-model, improves prediction quality, and reduces rework caused by inconsistent source data."
       },
       {
-        id: "customer-support",
-        title: "Customer Interaction Support",
-        description: "Support faster, clearer, and more consistent responses during service interactions.",
-        whyItMatters: "Customers value fast, accurate, and consistent responses. AI-assisted drafting and knowledge retrieval help agents handle a broader range of inquiries with confidence.",
-        exampleUseCases: [
-          "Suggest reply drafts inside the support chat console",
-          "Surface relevant knowledge articles during a live call",
-          "Translate inbound messages in near real time"
+        id: "ai-exploration",
+        category: "development",
+        title: "AI Exploration",
+        description: "Discover use cases, test ideas, and validate feasibility before larger investment.",
+        overview: "Exploration turns curiosity into evidence. Teams experiment with prototypes, evaluate data fit, and learn what is worth building without committing to full production paths too early.",
+        overviewIntro: "AI Explorations help organizations build confidence before scaling investment in full production solutions.",
+        overviewBullets: [
+          "Identify where AI can create measurable value",
+          "Validate feasibility with targeted experiments",
+          "Build executive alignment around evidence-based priorities"
         ],
-        implementationNotes: "Keep a human agent in the loop for sensitive or high-stakes interactions. Periodically audit suggested responses for tone, accuracy, and brand alignment."
+        keyWorkAreas: [
+          "Use-case discovery and prioritization",
+          "Proof-of-concept and pilot design",
+          "Feasibility and value hypothesis testing"
+        ],
+        potentialValue: "Focuses scarce talent on high-potential ideas and avoids costly builds that lack business pull-through.",
+        workAreas: [
+          {
+            id: "ai-baseline-establishment",
+            title: "AI Baseline Establishment",
+            subtitle: "You've started with AI. Do you know where you actually stand?",
+            helpsWith: [
+              "Identify existing AI efforts within the organization",
+              "Assess existing AI capabilities and identify gaps",
+              "Assess the workforce's current level of AI understanding",
+              "Assess the current AI education programs to tailor trainings"
+            ],
+            provides: [
+              "Understanding of current AI portfolio and capabilities",
+              "A foundation to begin analyzing critical gaps and prioritizing investments",
+              "Understanding of current on-the-ground AI training"
+            ]
+          },
+          {
+            id: "ai-business-needs-identification",
+            title: "AI Business Needs Identification",
+            subtitle: "What problems are worth solving with AI?",
+            helpsWith: [
+              "Facilitate workshops to surface high-value business challenges",
+              "Map operational pain points to AI-solvable patterns",
+              "Prioritize needs by impact, feasibility, and readiness",
+              "Align stakeholders on a shared opportunity backlog"
+            ],
+            provides: [
+              "A ranked list of business needs suited for AI exploration",
+              "Shared language between business and technical teams",
+              "Clear inputs for pilot and proof-of-concept planning"
+            ]
+          },
+          {
+            id: "ai-business-case-hypothesis",
+            title: "AI Business Case Hypothesis",
+            subtitle: "Can this idea deliver enough value to justify investment?",
+            helpsWith: [
+              "Frame value hypotheses with measurable outcomes",
+              "Estimate effort, risk, and dependency assumptions",
+              "Identify data and integration requirements early",
+              "Prepare executive-ready exploration summaries"
+            ],
+            provides: [
+              "Evidence-backed cases for or against further investment",
+              "Reduced surprise during downstream delivery",
+              "Faster go / no-go decisions on emerging ideas"
+            ]
+          },
+          {
+            id: "ai-use-cases",
+            title: "AI Use Cases",
+            subtitle: "Which ideas should move from concept to experiment?",
+            helpsWith: [
+              "Design focused proofs of concept and pilots",
+              "Test model fit against representative data samples",
+              "Capture learning from rapid iteration cycles",
+              "Document reusable patterns for future solutions"
+            ],
+            provides: [
+              "Validated use cases ready for solution development",
+              "Practical lessons on data, UX, and operating constraints",
+              "Momentum for scaling proven ideas across the enterprise"
+            ]
+          }
+        ]
       },
       {
-        id: "decision-support",
-        title: "Decision Support & Insight Generation",
-        description: "Compare options, surface patterns, and support better-informed decisions.",
-        whyItMatters: "Many decisions hinge on synthesizing data spread across systems. Surfacing comparisons, trends, and outliers helps leaders act with greater confidence and speed.",
-        exampleUseCases: [
-          "Compare vendor proposals across cost, terms, and risk",
-          "Identify trends in operational KPIs over time",
-          "Highlight outliers worth investigating in financial reports"
+        id: "ai-agents-development",
+        category: "development",
+        title: "AI Agents & Solutions Development",
+        description: "Design, build, and refine AI-powered applications and agentic workflows.",
+        overview: "This capability covers the engineering discipline of turning models into usable products — from prompt design and orchestration to integration with enterprise tools and APIs.",
+        keyWorkAreas: [
+          "Solution architecture and agent design",
+          "Application development and integration",
+          "Evaluation, tuning, and release management"
         ],
-        implementationNotes: "Pair AI-generated insights with the underlying data so reviewers can verify reasoning. Avoid presenting AI output as the sole basis for high-stakes decisions."
+        potentialValue: "Delivers working AI experiences faster and establishes reusable patterns for future solutions."
       },
       {
-        id: "knowledge-discovery",
-        title: "Knowledge Discovery & Search",
-        description: "Help users find relevant information across policies, documents, and knowledge sources.",
-        whyItMatters: "Institutional knowledge is fragmented across documents, wikis, and inboxes. Semantic search lets users ask questions in natural language and get answers grounded in the right sources.",
-        exampleUseCases: [
-          "Find the current version of a policy across SharePoint, Confluence, and email",
-          "Look up internal guidance on a specific operational scenario",
-          "Surface past projects with similar requirements or constraints"
+        id: "ai-infrastructure-platforms",
+        category: "development",
+        title: "AI Infrastructure & Platforms",
+        description: "Provide scalable compute, tooling, and shared services for AI delivery.",
+        overview: "Platform capabilities give teams a consistent foundation — model hosting, vector stores, MLOps pipelines, and developer tooling — so solutions can move from prototype to production reliably.",
+        keyWorkAreas: [
+          "Model hosting and inference infrastructure",
+          "MLOps and deployment pipelines",
+          "Shared developer tooling and environments"
         ],
-        implementationNotes: "Source citations are critical for trust. Establish a refresh cadence so retrieved content stays accurate as policies evolve."
+        potentialValue: "Lowers marginal cost per new AI solution and improves reliability as usage grows."
       },
       {
-        id: "risk-monitoring",
-        title: "Risk Monitoring & Compliance Oversight",
-        description: "Identify anomalies, policy concerns, or compliance risks earlier in a workflow.",
-        whyItMatters: "Catching anomalies and compliance gaps earlier reduces remediation cost and regulatory exposure. AI can scan more activity than any human team can review.",
-        exampleUseCases: [
-          "Flag unusual transaction patterns for human review",
-          "Detect missing approvals or out-of-sequence steps in procurement",
-          "Identify potentially out-of-policy expense reports"
+        id: "ai-delivery-operations",
+        category: "development",
+        title: "AI Delivery & Operations",
+        description: "Operate, monitor, and continuously improve AI solutions in production.",
+        overview: "Delivery and operations ensure AI systems perform in real conditions. This includes service management, performance monitoring, retraining cadences, and handoffs between build and run teams.",
+        keyWorkAreas: [
+          "Production monitoring and SLO management",
+          "Model refresh and drift response",
+          "Runbooks, support, and lifecycle ownership"
         ],
-        implementationNotes: "Calibrate sensitivity to balance false positives against missed risks. Pair monitoring with clear escalation paths to risk and compliance owners."
+        potentialValue: "Sustains value after launch, reduces downtime, and keeps models aligned with changing business needs."
       },
       {
-        id: "governance-support",
-        title: "Governance & Control Support",
-        description: "Support oversight, traceability, and consistent application of organizational guidance.",
-        whyItMatters: "Consistent application of policy is hard at scale, especially as guidance evolves. AI helps maintain traceability, document decisions, and surface gaps between intent and practice.",
-        exampleUseCases: [
-          "Track which policy version governed a given decision",
-          "Audit recent decisions against current standards",
-          "Document rationale for exceptions, escalations, or overrides"
+        id: "ai-users-adoption",
+        category: "adoption",
+        title: "AI Users & Adoption",
+        description: "Help end users understand, trust, and incorporate AI into daily work.",
+        overview: "Adoption is where strategy becomes habit. This capability focuses on change management, training, feedback loops, and measuring how AI tools are actually used in the field.",
+        keyWorkAreas: [
+          "User onboarding and role-based training",
+          "Feedback collection and experience iteration",
+          "Adoption metrics and success indicators"
         ],
-        implementationNotes: "Make decision logs reviewable by oversight bodies. Be explicit about what the AI did versus what humans approved."
+        potentialValue: "Increases return on AI investment by ensuring solutions are embraced, not sidelined, by the people they serve."
+      },
+      {
+        id: "ai-enabled-workforce",
+        category: "adoption",
+        title: "AI Enabled Workforce",
+        description: "Build skills, roles, and ways of working that sustain AI maturity over time.",
+        overview: "An AI-enabled workforce blends human judgment with machine assistance. This capability addresses talent development, new operating models, and career paths that keep pace with evolving technology.",
+        keyWorkAreas: [
+          "Skills development and AI literacy programs",
+          "Role evolution and team design",
+          "Communities of practice and center-of-excellence models"
+        ],
+        potentialValue: "Creates durable organizational capacity instead of one-off project wins tied to individual champions."
       }
     ];
 
@@ -2191,17 +4240,22 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
     function resetExperienceState() {
       selectedCapabilities = [];
       selectedQuestionResponse = null;
+      selectedCategoryFilter = null;
+      guidedExperienceStep = "question";
       viewedCapabilities = {};
       // Tear down transient UI: any armed clear-confirm, any armed
       // exit-confirm, an open modal, and any queued toast messages from
       // the previous visitor.
       resetClearArmState();
       resetExitArmState();
+      closeCapabilityPreview();
       closeCapabilityModal();
+      hideGuidedExperienceOverlay();
       toastQueue.length = 0;
       // Re-render dependent surfaces so hidden DOM is also coherent on
       // re-entry (cards unstarred, recommend note hidden, QR back to base URL).
-      renderAirmfIntroView();
+      renderGuidedExperience();
+      renderGuidedRecommendations();
       renderExploreView();
       refreshStatelessParameterPreview();
       refreshFocusQrDisplay();
@@ -2235,7 +4289,7 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
       }
     }
 
-    /** Click handler for the two Exit Experience buttons (intro + focus map).
+    /** Click handler for the Focus Map Exit Experience button.
      *  First tap arms the button; second tap calls handleExitExperience(). */
     function handleExitButtonClick(event) {
       var btn = event && event.currentTarget;
@@ -2261,7 +4315,7 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
     /* inside the aiRMF experience — armed/disarmed by showView().                */
     /* -------------------------------------------------------------------------- */
 
-    var IDLE_MS = 90000;
+    var IDLE_MS = 120000;
     var IDLE_WARN_LEAD_MS = 12000; // toast appears this long before exit
     var idleTimer = null;
     var idleWarnTimer = null;
@@ -2322,7 +4376,6 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
       // Re-render the destination so its content reflects the latest state.
       if (viewName === "explore") renderExploreView();
       else if (viewName === "focus") renderFocusMapView();
-      else if (viewName === "airmf") renderAirmfIntroView();
       // Idle reset only matters inside the aiRMF experience; the entry page
       // is the launcher itself, so there's nothing to time out to.
       if (viewName === "home") disarmIdleTimer();
@@ -2331,10 +4384,9 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
 
     /**
      * Reflects current selection count on the Capability Map's CTAs:
-     *  - Both "View AI Focus Map" buttons (header + sticky footer) get a
+     *  - Both "View AI Focus Map" buttons (header + footer) get a
      *    live count and are disabled when 0 selected.
      *  - Both "Clear selections" buttons are hidden at 0, visible otherwise.
-     *  - The sticky footer status line summarizes the count for visitors.
      *  - Any count change defuses an armed clear so stale confirmations
      *    can't fire against new selections.
      */
@@ -2354,32 +4406,12 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
         btn.hidden = n === 0;
       });
       if (clearArmed) resetClearArmState();
-      var status = document.getElementById("capability-map-footer-status");
-      if (status) {
-        status.textContent = n === 0
-          ? "No capabilities selected"
-          : n + (n === 1 ? " capability" : " capabilities") + " selected";
-      }
     }
 
-    /** Populate the intro view's guided question. The Continue CTA is always
-     *  enabled — selecting a focus area is optional and only changes whether
-     *  the Capability Map shows Recommended highlights. */
-    function renderAirmfIntroView() {
-      renderGuidedEntry();
-    }
-
-    function renderGuidedEntry() {
+    /** Guided Experience overlay: journey question buttons. */
+    function renderGuidedExperience() {
       var host = document.getElementById("guided-entry-host");
       if (!host) return;
-      // Helper is always visible; copy swaps to reflect optional-vs-selected
-      // state so the visitor knows the question can be skipped.
-      var helper = document.getElementById("guided-entry-helper");
-      if (helper) {
-        helper.textContent = selectedQuestionResponse
-          ? "Based on your priority, we’ve highlighted capabilities that may help achieve that outcome. You can refine your selections at any time."
-          : "Optional: choose a focus area to highlight related capabilities.";
-      }
       host.innerHTML = "";
       for (var i = 0; i < QUESTION_RESPONSES.length; i++) {
         var response = QUESTION_RESPONSES[i];
@@ -2388,7 +4420,17 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
         btn.type = "button";
         btn.className = "btn-response";
         btn.setAttribute("aria-pressed", active ? "true" : "false");
-        btn.textContent = response.label;
+
+        var title = document.createElement("span");
+        title.className = "btn-response-title";
+        title.textContent = response.label;
+        btn.appendChild(title);
+
+        var desc = document.createElement("span");
+        desc.className = "btn-response-desc";
+        desc.textContent = response.description;
+        btn.appendChild(desc);
+
         btn.addEventListener("click", function (id) {
           return function () {
             selectQuestionResponse(id);
@@ -2398,104 +4440,181 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
       }
     }
 
+    /** Guided Experience step 2: recommendation cards over the capability map. */
+    function renderGuidedRecommendations() {
+      var host = document.getElementById("guided-recommendations-host");
+      if (!host) return;
+      host.innerHTML = "";
+      if (!selectedQuestionResponse) return;
+
+      var ids = JOURNEY_RECOMMENDATIONS[selectedQuestionResponse] || [];
+      for (var i = 0; i < ids.length; i++) {
+        var cap = capabilityById(ids[i]);
+        if (!cap) continue;
+
+        var card = document.createElement("button");
+        card.type = "button";
+        card.className = "guided-recommendation-card";
+        card.setAttribute("role", "listitem");
+        card.setAttribute("aria-label", cap.title + ". Learn more.");
+
+        var art = document.createElement("div");
+        art.className = "guided-recommendation-art";
+        art.setAttribute("aria-hidden", "true");
+        card.appendChild(art);
+
+        var body = document.createElement("div");
+        body.className = "guided-recommendation-body";
+
+        var heading = document.createElement("h3");
+        heading.className = "guided-recommendation-title";
+        heading.textContent = cap.title;
+        body.appendChild(heading);
+
+        var text = document.createElement("p");
+        text.className = "guided-recommendation-desc";
+        text.textContent = cap.description;
+        body.appendChild(text);
+
+        var learn = document.createElement("span");
+        learn.className = "btn btn-primary";
+        learn.setAttribute("aria-hidden", "true");
+        learn.textContent = "Learn More";
+        body.appendChild(learn);
+
+        card.addEventListener("click", function (capId) {
+          return function () {
+            openCapabilityModal(capId);
+          };
+        }(cap.id));
+        card.appendChild(body);
+        host.appendChild(card);
+      }
+    }
+
     /**
-     * Build a single capability card. The card itself is the primary
-     * interactive surface (click / Enter / Space opens the detail modal);
-     * the star button inside stops propagation so it only toggles selection.
+     * Toggle true to show high-contrast hotspot bounds for alignment tuning.
      */
-    function buildExploreCard(cap) {
+    const SHOW_HOTSPOT_DEBUG = false;
+
+    /**
+     * Hotspot centers (% of wheel artboard) aligned to icon positions in
+     * assets/airmf-wheel.png. Eight wheel icons only — AI Exploration has no
+     * on-wheel hotspot. Recalibrate if the artwork changes.
+     */
+    var WHEEL_LAYOUT_SLOTS = {
+      "trusted-secure-ai":           { left: 50.0, top: 6.2 },
+      "data-readiness":              { left: 66.2, top: 10.8 },
+      "ai-delivery-operations":      { left: 83.5, top: 26.5 },
+      "ai-users-adoption":           { left: 73.0, top: 53.0 },
+      "ai-infrastructure-platforms": { left: 51.0, top: 80.5 },
+      "ai-agents-development":       { left: 26.5, top: 75.5 },
+      "ai-enabled-workforce":        { left: 13.5, top: 49.5 },
+      "ai-strategy-governance":      { left: 22.5, top: 15.5 }
+    };
+
+    function wheelLabelOffset(pos) {
+      var dx = pos.left - 50;
+      var dy = pos.top - 50;
+      var len = Math.sqrt(dx * dx + dy * dy) || 1;
+      var outward = 3.2;
+      return {
+        ox: ((dx / len) * outward).toFixed(2) + "vmin",
+        oy: ((dy / len) * outward).toFixed(2) + "vmin"
+      };
+    }
+
+    function wheelTargetPosition(capabilityId) {
+      var slot = WHEEL_LAYOUT_SLOTS[capabilityId];
+      return slot ? slot : { left: 50, top: 50 };
+    }
+
+    /**
+     * Build a hotspot overlay on the wheel image. Tap opens preview.
+     * Starring is only available from the capability detail modal.
+     */
+    function buildWheelTarget(cap) {
       var selected = isSelected(cap.id);
       var recommended = isCapabilityRecommended(cap.id);
       var viewed = isCapabilityViewed(cap.id);
+      var emphasized = isWheelTargetEmphasized(cap);
+      var dimmed = isWheelTargetDimmed(cap);
+      var pos = wheelTargetPosition(cap.id);
+      var labelOff = wheelLabelOffset(pos);
 
-      var card = document.createElement("article");
-      card.className =
-        "cap-card" +
+      var target = document.createElement("div");
+      target.className =
+        "wheel-target" +
         (selected ? " is-selected" : "") +
         (recommended ? " is-recommended" : "") +
-        (viewed ? " is-viewed" : "");
-      card.dataset.capabilityId = cap.id;
-      card.setAttribute("role", "button");
-      card.setAttribute("tabindex", "0");
-      card.setAttribute("aria-label", cap.title + ". Open capability details.");
+        (viewed ? " is-viewed" : "") +
+        (emphasized ? " is-emphasized" : "") +
+        (dimmed ? " is-dimmed" : "");
+      target.dataset.capabilityId = cap.id;
+      target.dataset.domain = cap.category;
+      target.style.left = pos.left + "%";
+      target.style.top = pos.top + "%";
+      target.style.setProperty("--label-ox", labelOff.ox);
+      target.style.setProperty("--label-oy", labelOff.oy);
 
-      if (recommended || viewed) {
-        var badges = document.createElement("div");
-        badges.className = "cap-card-badges";
-        if (recommended) {
-          var rec = document.createElement("span");
-          rec.className = "cap-recommend-label";
-          rec.textContent = "Recommended";
-          badges.appendChild(rec);
-        }
-        if (viewed) {
-          var vw = document.createElement("span");
-          vw.className = "cap-viewed-label";
-          vw.textContent = "Viewed";
-          badges.appendChild(vw);
-        }
-        card.appendChild(badges);
-      }
+      var hit = document.createElement("button");
+      hit.type = "button";
+      hit.className = "wheel-target-hit";
+      hit.setAttribute("aria-label", cap.title + ". Open capability details.");
 
-      var h2 = document.createElement("h2");
-      h2.textContent = cap.title;
-      card.appendChild(h2);
+      var dot = document.createElement("span");
+      dot.className = "wheel-target-dot";
+      dot.setAttribute("aria-hidden", "true");
+      hit.appendChild(dot);
 
-      var p = document.createElement("p");
-      p.textContent = cap.description;
-      card.appendChild(p);
-
-      var footer = document.createElement("div");
-      footer.className = "cap-card-footer";
-
-      var hint = document.createElement("span");
-      hint.className = "hint";
-      hint.textContent = selected ? "Selected" : "Not selected";
-      footer.appendChild(hint);
-
-      var star = document.createElement("button");
-      star.type = "button";
-      star.className = "btn btn-star";
-      star.setAttribute("aria-pressed", selected ? "true" : "false");
-      star.setAttribute(
-        "aria-label",
-        (selected ? "Remove " : "Select ") + cap.title
-      );
+      var star = document.createElement("span");
+      star.className = "wheel-target-star";
+      star.setAttribute("aria-hidden", "true");
       star.textContent = "★";
-      // stopPropagation: clicking the star must never open the modal.
-      star.addEventListener("click", function (e) {
-        e.stopPropagation();
-        toggleSelection(cap.id);
-      });
-      footer.appendChild(star);
+      hit.appendChild(star);
 
-      card.appendChild(footer);
-
-      card.addEventListener("click", function () {
+      hit.addEventListener("click", function () {
         openCapabilityModal(cap.id);
       });
-      // Only treat keyboard activation on the card itself; the star handles
-      // its own Enter/Space as a native button.
-      card.addEventListener("keydown", function (e) {
-        if (e.target !== card) return;
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          openCapabilityModal(cap.id);
-        }
-      });
+      target.appendChild(hit);
 
-      return card;
+      var label = document.createElement("span");
+      label.className = "wheel-target-label";
+      label.textContent = cap.title;
+      target.appendChild(label);
+
+      return target;
     }
 
     function renderExploreView() {
       updateFocusButtonState();
-      // The recommend note only makes sense once a priority has been chosen.
-      var note = document.getElementById("map-recommend-note");
-      if (note) note.hidden = !selectedQuestionResponse;
+      var journeyContext = document.getElementById("map-journey-context");
+      var journeyValue = document.getElementById("map-journey-context-value");
+      var guided = document.getElementById("guided-experience-overlay");
+      var guidedOpen = guided && !guided.hidden;
+      if (journeyContext && journeyValue) {
+        if (!selectedQuestionResponse || guidedOpen) {
+          journeyContext.hidden = true;
+          journeyValue.textContent = "";
+        } else {
+          var priorityLabel = "";
+          for (var q = 0; q < QUESTION_RESPONSES.length; q++) {
+            if (QUESTION_RESPONSES[q].id === selectedQuestionResponse) {
+              priorityLabel = QUESTION_RESPONSES[q].label;
+              break;
+            }
+          }
+          journeyValue.textContent = priorityLabel || "Selected";
+          journeyContext.hidden = false;
+        }
+      }
+      renderCategoryFilters();
       var host = document.getElementById("explore-card-host");
       host.innerHTML = "";
+      host.className = "wheel-targets" + (SHOW_HOTSPOT_DEBUG ? " is-debug" : "");
       for (var i = 0; i < CAPABILITIES.length; i++) {
-        host.appendChild(buildExploreCard(CAPABILITIES[i]));
+        if (!WHEEL_LAYOUT_SLOTS[CAPABILITIES[i].id]) continue;
+        host.appendChild(buildWheelTarget(CAPABILITIES[i]));
       }
     }
 
@@ -2555,11 +4674,20 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
       showView("airmf");
     });
 
-    // aiRMF Intro → Capability Map. Always allowed; focus-area selection is
-    // optional and only affects whether recommendations are highlighted.
-    document.getElementById("btn-to-explore").addEventListener("click", function () {
+    document.getElementById("btn-explore-freely").addEventListener("click", function () {
+      clearGuidedJourneyState();
       showView("explore");
     });
+
+    document.getElementById("btn-guided-experience").addEventListener("click", function () {
+      showView("explore");
+      showGuidedExperienceOverlay();
+    });
+
+    document.getElementById("btn-edit-journey").addEventListener("click", openGuidedExperienceForEdit);
+
+    document.getElementById("btn-explore-freely-overlay").addEventListener("click", dismissGuidedOverlaySoftLanding);
+    document.getElementById("btn-explore-freely-guided").addEventListener("click", dismissGuidedOverlaySoftLanding);
 
     // "View AI Focus Map" — same behavior for the header CTA and the sticky
     // footer twin; both share this guarded handler.
@@ -2572,6 +4700,7 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
 
     // Capability Map → aiRMF Intro.
     document.getElementById("btn-back-to-intro").addEventListener("click", function () {
+      clearGuidedJourneyState();
       showView("airmf");
     });
 
@@ -2580,10 +4709,9 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
       showView("explore");
     });
 
-    // "Exit Experience" on intro + focus views: two-tap confirm to prevent
-    // accidental loss of selections. Second tap (within EXIT_ARM_MS) ends
-    // the aiRMF runtime, resets all in-memory state, then returns to entry.
-    document.getElementById("btn-intro-home").addEventListener("click", handleExitButtonClick);
+    // "Exit Experience" on the Focus Map: two-tap confirm to prevent accidental
+    // loss of selections. Second tap (within EXIT_ARM_MS) ends the aiRMF runtime,
+    // resets all in-memory state, then returns to entry.
     document.getElementById("btn-focus-home").addEventListener("click", handleExitButtonClick);
 
     // Activity-driven idle reset: any tap or key press anywhere on the
@@ -2599,6 +4727,14 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
     document.getElementById("btn-clear-selections").addEventListener("click", handleClearSelectionsClick);
     document.getElementById("btn-clear-selections-footer").addEventListener("click", handleClearSelectionsClick);
 
+    document.getElementById("preview-close-btn").addEventListener("click", closeCapabilityPreview);
+    document.getElementById("preview-learn-more-btn").addEventListener("click", handlePreviewLearnMore);
+    document.getElementById("capability-preview").addEventListener("click", function (e) {
+      if (e.target === e.currentTarget) {
+        closeCapabilityPreview();
+      }
+    });
+
     // Capability modal: close button, in-modal select/deselect, prev/next
     // pager, click-outside, Tab focus trap, and Escape (only when open).
     document.getElementById("modal-close-btn").addEventListener("click", closeCapabilityModal);
@@ -2613,6 +4749,16 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
     });
     document.addEventListener("keydown", function (e) {
       if (e.key !== "Escape") return;
+      var preview = document.getElementById("capability-preview");
+      if (preview && !preview.hidden) {
+        closeCapabilityPreview();
+        return;
+      }
+      var guided = document.getElementById("guided-experience-overlay");
+      if (guided && !guided.hidden) {
+        dismissGuidedOverlaySoftLanding();
+        return;
+      }
       var overlay = document.getElementById("capability-modal");
       if (overlay && !overlay.hidden) {
         closeCapabilityModal();
@@ -2621,9 +4767,8 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
 
     updateSessionIdDisplays();
     refreshFocusQrDisplay();
-    // Populate both interactive views up front so they're ready in hidden DOM:
-    // the intro's question buttons + CTA, and the map's card grid.
-    renderAirmfIntroView();
+    renderGuidedExperience();
+    renderGuidedRecommendations();
     renderExploreView();
     refreshStatelessParameterPreview();
   </script>
