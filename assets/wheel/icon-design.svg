@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
+  <title id="title">Design icon placeholder</title>
+  <desc id="desc">Pen nib placeholder icon.</desc>
+  <path d="M64 18 L96 50 L72 106 L56 106 L32 50 Z" fill="none" stroke="currentColor" stroke-width="8" stroke-linejoin="round"/>
+  <circle cx="64" cy="58" r="8" fill="currentColor"/>
+  <line x1="64" y1="66" x2="64" y2="106" stroke="currentColor" stroke-width="8" stroke-linecap="round"/>
+</svg>

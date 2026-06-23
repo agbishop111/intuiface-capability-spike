@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
+  <title id="title">Map icon placeholder</title>
+  <desc id="desc">Connected path placeholder icon.</desc>
+  <path d="M28 92 C48 28, 78 104, 100 36" fill="none" stroke="currentColor" stroke-width="9" stroke-linecap="round"/>
+  <circle cx="28" cy="92" r="11" fill="currentColor"/>
+  <circle cx="64" cy="64" r="11" fill="currentColor" opacity="0.75"/>
+  <circle cx="100" cy="36" r="11" fill="currentColor"/>
+</svg>

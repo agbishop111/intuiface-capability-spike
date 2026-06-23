@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
+  <title id="title">Launch icon placeholder</title>
+  <desc id="desc">Rocket placeholder icon.</desc>
+  <path d="M70 20 C92 28,100 52,90 78 L70 98 L50 78 C40 52,48 28,70 20 Z" fill="none" stroke="currentColor" stroke-width="8" stroke-linejoin="round"/>
+  <circle cx="70" cy="52" r="10" fill="none" stroke="currentColor" stroke-width="7"/>
+  <path d="M50 78 L32 94 L48 96 M90 78 L108 94 L92 96" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M64 100 L58 116 M76 100 L82 116" stroke="currentColor" stroke-width="7" stroke-linecap="round"/>
+</svg>

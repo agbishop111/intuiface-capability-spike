@@ -30,13 +30,10 @@
       box-sizing: border-box;
     }
 
-    /* Kiosk base: 22px lets a 3840×2160 display present comfortable touch
-       targets (60–80px tall buttons) and readable body text without further
-       scaling. Smaller dev viewports still render — they just look bigger
-       per visible character, which is the right tradeoff for a kiosk-first
-       prototype. */
+    /* Kiosk base: root font scales with the fitted 16:9 stage width so rem-based
+       screens fill the stage at any size. At 3840px-wide stage → 22px. */
     html {
-      font-size: 22px;
+      font-size: calc(22px * var(--stage-width) / 3840);
       font-family: var(--font-sans);
       -webkit-tap-highlight-color: transparent;
     }
@@ -44,11 +41,52 @@
     body {
       margin: 0;
       min-height: 100vh;
+      min-height: 100dvh;
+      height: 100vh;
+      height: 100dvh;
       font-family: var(--font-sans);
       background: #0f1419;
       color: #e8ecf1;
       line-height: 1.45;
-      overflow: auto;
+      overflow: hidden;
+    }
+
+    /* Shared 16:9 kiosk stage — fills the largest 16:9 rect in the viewport.
+       No transform scaling; views use 100% of the stage. */
+    .app-shell {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: #0f1419;
+    }
+
+    .app-stage-scaler {
+      position: relative;
+      flex: none;
+      overflow: hidden;
+      width: var(--stage-width);
+      height: var(--stage-height);
+    }
+
+    /* Stage sizing convention:
+       - .app-shell may use vw/vh because it defines the outer letterboxed stage.
+       - Inside #app-stage, do not use raw vw/vh/vmin for layout, typography, or
+         touch target sizing. Use rem, %, and app-stage container query units instead.
+       - Use @container app-stage queries instead of viewport @media queries for
+         stage content.
+       - Do not use position: fixed for overlays; use position: absolute inside #app-stage. */
+    .app-stage {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      container-type: size;
+      container-name: app-stage;
+      background: #0f1419;
     }
 
     /* STIX Two Text — primary headings and capability titles */
@@ -73,6 +111,8 @@
 
     /* aiRMF concept palette */
     :root {
+      --stage-width: min(100vw, calc(100vh * 16 / 9));
+      --stage-height: min(100vh, calc(100vw * 9 / 16));
       --font-sans: "Open Sans", sans-serif;
       --font-serif: "STIX Two Text", serif;
       --airmf-navy: #0f2744;
@@ -87,15 +127,16 @@
       --airmf-panel: #ffffff;
     }
 
-    /* Each view is a full-screen flex column: header (top), body (flex: 1),
-       optional footer (bottom). On the kiosk it fits one screen exactly;
-       on smaller viewports it overflows and the view itself scrolls so the
-       header/footer stay attached to their respective ends of the content. */
+    /* Each view fills the 16:9 app-stage: header (top), body (flex: 1),
+       optional footer (bottom). Inactive views are hidden; the active view
+       may scroll internally on undersized demo viewports. */
     .view {
       display: none;
+      position: absolute;
+      inset: 0;
       flex-direction: column;
-      width: 100vw;
-      height: 100vh;
+      width: 100%;
+      height: 100%;
       margin: 0;
       padding: 0;
       max-width: none;
@@ -104,6 +145,7 @@
 
     .view.is-active {
       display: flex;
+      z-index: 1;
     }
 
     /* App header: title row + optional inline meta. No longer sticky —
@@ -229,10 +271,9 @@
       color: #fbbf24;
     }
 
-    /* Persistent prototype disclaimer — fixed top-right, out of the way of
-       footer actions. One element shown across every view. */
+    /* Persistent prototype disclaimer — top-right inside the app-stage. */
     .spike-disclaimer {
-      position: fixed;
+      position: absolute;
       top: clamp(0.4rem, 0.75vh, 0.55rem);
       right: clamp(0.55rem, 1.1vw, 0.85rem);
       bottom: auto;
@@ -442,23 +483,31 @@
       font-weight: 700;
     }
 
-    /* Guided step 2: mute unselected journey cards so the active answer reads clearly. */
+    /* Guided step 2: soften unselected journey cards while keeping them readable. */
     .guided-overlay[data-guided-step="recommendations"] .btn-response:not([aria-pressed="true"]) {
-      background: #eef1f5;
-      border-color: #dde3ea;
+      border-color: #cfd8e3;
+      box-shadow: none;
     }
 
     .guided-overlay[data-guided-step="recommendations"] .btn-response:not([aria-pressed="true"]) .btn-response-title {
-      color: #94a3b8;
-      font-weight: 600;
+      color: #5c6b7a;
+      font-weight: 650;
     }
 
     .guided-overlay[data-guided-step="recommendations"] .btn-response:not([aria-pressed="true"]) .btn-response-desc {
-      color: #b8c2cc;
+      color: #7a8a9a;
     }
 
     .guided-overlay[data-guided-step="recommendations"] .btn-response[aria-pressed="true"] {
       box-shadow: 0 0 0 3px rgba(139, 195, 74, 0.45);
+    }
+
+    .guided-overlay[data-guided-step="recommendations"] .guided-entry-sub {
+      display: none;
+    }
+
+    .guided-overlay[data-guided-step="recommendations"] .guided-entry-heading {
+      margin-bottom: clamp(1rem, 2cqh, 1.5rem);
     }
 
     .btn-response:focus-visible {
@@ -474,55 +523,52 @@
       line-height: 1.4;
     }
 
-    /* Sidebar journey context — shown after guided soft landing; paired with Edit. */
+    /* Compact journey status — bottom of explore sidebar after domain filters. */
     .map-journey-context {
+      flex-shrink: 0;
       display: flex;
       flex-direction: column;
-      gap: clamp(0.28rem, 0.5vh, 0.4rem);
-      padding: clamp(0.5rem, 0.9vh, 0.65rem) 0.6rem;
-      background: #f8fafc;
-      border: 1px solid #d1d5db;
-      border-left: 4px solid var(--airmf-foundations);
-      border-radius: 0.35rem;
-      flex-shrink: 0;
+      gap: 0.3rem;
+      padding-top: clamp(0.7rem, 1.25cqh, 0.95rem);
+      border-top: 1px solid #e5e7eb;
     }
 
     .map-journey-context[hidden] {
       display: none;
     }
 
-    .map-journey-context-header {
+    .map-journey-context-eyebrow {
+      font-size: clamp(0.65rem, 1cqh, 0.75rem);
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #94a3b8;
+    }
+
+    .map-journey-context-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 0.5rem;
-    }
-
-    .map-journey-context-eyebrow {
-      font-size: clamp(0.62rem, 0.95vh, 0.72rem);
-      font-weight: 700;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: #64748b;
+      gap: 0.75rem;
     }
 
     .btn-journey-edit {
       flex-shrink: 0;
-      min-height: 2rem;
-      padding: 0 0.65rem;
+      min-height: 2.4rem;
+      padding: 0 0.8rem;
       font-family: var(--font-sans);
-      font-size: clamp(0.68rem, 1vh, 0.76rem);
+      font-size: clamp(0.8rem, 1.15cqh, 0.9rem);
       font-weight: 650;
-      color: var(--airmf-navy);
-      background: var(--airmf-panel);
-      border: 1px solid #94a3b8;
-      border-radius: 0.3rem;
+      color: #475569;
+      background: #fff;
+      border: 1px solid #cbd5e1;
+      border-radius: 0.35rem;
       cursor: pointer;
       touch-action: manipulation;
     }
 
     .btn-journey-edit:active {
-      background: #f1f5f9;
+      background: #f8fafc;
     }
 
     .btn-journey-edit:focus-visible {
@@ -533,28 +579,22 @@
     .map-journey-context-value {
       margin: 0;
       font-family: var(--font-serif);
-      font-size: clamp(0.82rem, 1.25vh, 0.92rem);
+      font-size: clamp(0.98rem, 1.5cqh, 1.12rem);
       font-weight: 700;
       color: var(--airmf-navy);
-      line-height: 1.25;
-    }
-
-    .map-journey-context-hint {
-      margin: 0;
-      font-size: clamp(0.64rem, 0.98vh, 0.72rem);
-      line-height: 1.35;
-      color: #64748b;
+      line-height: 1.2;
+      letter-spacing: -0.01em;
     }
 
     .explore-sidebar-filters-heading {
-      margin: clamp(0.35rem, 0.65vh, 0.5rem) 0 0;
-      font-family: var(--font-serif);
-      font-size: clamp(0.72rem, 1.1vh, 0.82rem);
+      margin: 0;
+      font-family: var(--font-sans);
+      font-size: clamp(0.78rem, 1.2cqh, 0.9rem);
       font-weight: 700;
       color: #64748b;
       line-height: 1.2;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
+      letter-spacing: 0.01em;
+      flex-shrink: 0;
     }
 
     /* Wraps the map's lede in a single compact block. */
@@ -566,13 +606,13 @@
     }
 
     /* Grid Room Home (Touchscreen Entry): a single row of four large
-       experience cards. Body is a flex column that centers the row in
-       the lower half of the screen so a seated visitor can reach the
-       cards without leaning. */
+       experience cards. Body is a flex column; content sits just below the
+       header for balanced vertical composition on the kiosk stage. */
     .home-body {
       align-items: center;
-      justify-content: center;
-      gap: 1.6rem;
+      justify-content: flex-start;
+      gap: 0.8rem;
+      padding: 0.35rem 2rem 1rem;
     }
 
     .home-lede {
@@ -655,27 +695,36 @@
       border: 1px solid #334155;
     }
 
-    /* aiRMF Intro: light two-column layout — about left, pathways right. */
+    /* aiRMF Intro: kiosk-first two-column layout inside the 16:9 stage.
+       rem-based sizing (same scale as home) — html font-size tracks stage width. */
     #view-airmf-intro {
       background: var(--airmf-surface-light);
       color: var(--airmf-navy);
       overflow: hidden;
-      --intro-pad-block: clamp(0.55rem, 1.1vh, 0.85rem);
-      --intro-pad-inline: clamp(1.1rem, 2vw, 1.65rem);
-      --intro-gap: clamp(0.3rem, 0.65vh, 0.5rem);
+      --intro-canvas-pad: 7rem;
+      --intro-header-pad-top: clamp(1.5rem, 2.5cqh, 2.1rem);
+      --intro-col-gap: 4rem;
+      --intro-block-gap: 0.8rem;
+      --intro-headline-size: 3.75rem;
+      --intro-body-size: 1.05rem;
+      --intro-section-heading-size: 1.65rem;
+      --intro-support-card-height: 4rem;
+      --intro-support-icon-size: 2.65rem;
+      --intro-cta-height: 7.75rem;
     }
 
     #view-airmf-intro .app-header {
       background: var(--airmf-surface-light);
-      border-bottom: 1px solid #d1d5db;
-      padding: var(--intro-pad-block) var(--intro-pad-inline);
+      border-bottom: none;
+      padding: var(--intro-header-pad-top) var(--intro-canvas-pad) 0.5rem;
       flex-shrink: 0;
     }
 
     #view-airmf-intro .app-header h1 {
       color: var(--airmf-navy);
-      font-size: clamp(1.2rem, 2vh, 1.75rem);
-      line-height: 1.15;
+      font-size: var(--intro-headline-size);
+      line-height: 1.1;
+      letter-spacing: -0.022em;
     }
 
     #view-airmf-intro .page-subtitle {
@@ -686,63 +735,66 @@
       background: var(--airmf-surface-light);
       border-top: 1px solid #d1d5db;
       flex-shrink: 0;
-      padding: 0.5rem var(--intro-pad-inline) 0.55rem;
+      padding: 0.5rem var(--intro-canvas-pad) 0.55rem;
     }
 
     #view-airmf-intro .view-body {
       overflow: hidden;
-      padding: 0;
-      flex: 1 1 auto;
+      padding: 0.45rem var(--intro-canvas-pad) 0.65rem;
+      flex: 1 1 0;
       min-height: 0;
+      gap: 0;
     }
 
     .intro-body {
       gap: 0;
-      flex: 1 1 auto;
+      flex: 1 1 0;
       min-height: 0;
       overflow: hidden;
+      justify-content: center;
     }
 
     .intro-columns {
-      height: 100%;
-      flex: 1 1 auto;
-      min-height: 0;
+      flex: 0 1 auto;
+      max-height: 100%;
+      width: 100%;
       display: grid;
-      gap: 0;
+      gap: var(--intro-col-gap);
       grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-      align-items: stretch;
+      align-items: center;
+      overflow: hidden;
     }
 
     .intro-about {
       margin: 0;
-      padding: var(--intro-pad-block) var(--intro-pad-inline);
-      background: var(--airmf-surface-light);
+      padding: 0;
+      background: transparent;
       border: none;
-      border-right: 1px solid #d1d5db;
       border-radius: 0;
       display: flex;
       flex-direction: column;
-      gap: var(--intro-gap);
-      justify-content: center;
+      gap: var(--intro-block-gap);
+      justify-content: flex-start;
       min-height: 0;
-      overflow: hidden;
+      overflow: visible;
     }
 
     .intro-lede {
       margin: 0;
       color: #334155;
-      font-size: clamp(0.76rem, 1.25vh, 0.88rem);
-      line-height: 1.35;
-      max-width: 34rem;
+      font-size: var(--intro-body-size);
+      line-height: 1.38;
+      max-width: none;
     }
 
     .intro-support-heading {
-      margin: 0.1rem 0 0;
+      margin: 0;
       font-family: var(--font-serif);
-      font-size: clamp(0.82rem, 1.35vh, 0.92rem);
+      font-size: var(--intro-section-heading-size);
       font-weight: 700;
       color: var(--airmf-navy);
-      line-height: 1.25;
+      line-height: 1.2;
+      letter-spacing: -0.015em;
     }
 
     .intro-support-list {
@@ -751,39 +803,40 @@
       padding: 0;
       display: flex;
       flex-direction: column;
-      gap: clamp(0.28rem, 0.5vh, 0.4rem);
+      gap: 0.55rem;
     }
 
     .intro-support-card {
       display: flex;
       align-items: center;
-      gap: 0.65rem;
-      padding: clamp(0.45rem, 0.9vh, 0.62rem) 0.75rem;
+      gap: 0.85rem;
+      min-height: var(--intro-support-card-height);
+      padding: 0.75rem 1.15rem;
       background: var(--airmf-panel);
       border: 1px solid #e2e8f0;
-      border-radius: 0.3rem;
+      border-radius: 0.4rem;
     }
 
     .intro-support-icon {
       flex-shrink: 0;
-      width: clamp(1.65rem, 2.6vh, 2rem);
-      height: clamp(1.65rem, 2.6vh, 2rem);
+      width: var(--intro-support-icon-size);
+      height: var(--intro-support-icon-size);
       border-radius: 50%;
       background: #e2e8f0;
     }
 
     .intro-support-text {
-      font-size: clamp(0.72rem, 1.15vh, 0.82rem);
-      line-height: 1.3;
+      font-size: 1.05rem;
+      line-height: 1.32;
       color: #334155;
     }
 
     .intro-closing {
-      margin: 0.1rem 0 0;
-      font-size: clamp(0.74rem, 1.2vh, 0.86rem);
-      line-height: 1.35;
+      margin: 0;
+      font-size: var(--intro-body-size);
+      line-height: 1.38;
       color: #334155;
-      max-width: 34rem;
+      max-width: none;
     }
 
     .intro-path-card:focus-visible {
@@ -793,17 +846,17 @@
 
     .intro-visual-panel {
       margin: 0;
-      padding: var(--intro-pad-block) var(--intro-pad-inline);
-      background: var(--airmf-surface-light);
+      padding: 0;
+      background: transparent;
       border: none;
       border-radius: 0;
       display: flex;
       flex-direction: column;
       gap: 0;
       align-items: stretch;
-      justify-content: center;
+      justify-content: flex-start;
       position: relative;
-      overflow: hidden;
+      overflow: visible;
       min-height: 0;
     }
 
@@ -812,29 +865,31 @@
       max-width: none;
       display: flex;
       flex-direction: column;
-      gap: clamp(0.4rem, 0.75vh, 0.55rem);
+      gap: 0.8rem;
     }
 
     .intro-actions-label {
-      margin: 0 0 clamp(0.35rem, 0.7vh, 0.5rem);
+      margin: 0 0 0.45rem;
       font-family: var(--font-serif);
-      font-size: clamp(0.88rem, 1.4vh, 0.98rem);
+      font-size: var(--intro-section-heading-size);
       font-weight: 700;
       color: var(--airmf-navy);
       text-align: left;
       width: 100%;
+      line-height: 1.2;
+      letter-spacing: -0.015em;
     }
 
     .intro-path-card {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 0.75rem;
+      gap: 1.15rem;
       width: 100%;
-      min-height: clamp(3.35rem, 6.5vh, 4rem);
-      padding: clamp(0.5rem, 1vh, 0.65rem) 0.85rem;
+      min-height: var(--intro-cta-height);
+      padding: 1.15rem 1.5rem;
       background: var(--airmf-panel);
-      border-radius: 0.4rem;
+      border-radius: 0.5rem;
       border: 2px solid transparent;
       color: var(--airmf-navy);
       text-align: left;
@@ -862,14 +917,15 @@
     .intro-path-card-text {
       display: flex;
       flex-direction: column;
-      gap: 0.2rem;
+      gap: 0.35rem;
     }
 
     .intro-path-card-text strong {
       font-family: var(--font-serif);
-      font-size: clamp(0.9rem, 1.4vh, 0.98rem);
+      font-size: 1.55rem;
       font-weight: 700;
-      letter-spacing: -0.01em;
+      letter-spacing: -0.015em;
+      line-height: 1.15;
     }
 
     .intro-path-card--explore .intro-path-card-text strong {
@@ -881,15 +937,16 @@
     }
 
     .intro-path-card-text span {
-      font-size: clamp(0.7rem, 1.1vh, 0.78rem);
+      font-size: 0.95rem;
       font-weight: 500;
       color: #64748b;
-      line-height: 1.25;
+      line-height: 1.32;
+      max-width: 28rem;
     }
 
     .intro-path-chevron {
       flex-shrink: 0;
-      font-size: clamp(1.25rem, 2vh, 1.45rem);
+      font-size: 2rem;
       font-weight: 300;
       color: #94a3b8;
       line-height: 1;
@@ -911,13 +968,14 @@
     }
 
     @media (max-width: 900px) {
+      #view-airmf-intro {
+        --intro-canvas-pad: 2rem;
+        --intro-headline-size: 2.75rem;
+      }
+
       .intro-columns {
         grid-template-columns: 1fr;
-        gap: 0;
-      }
-      .intro-about {
-        border-right: none;
-        border-bottom: 1px solid #d1d5db;
+        gap: 1.5rem;
       }
     }
 
@@ -1049,14 +1107,14 @@
       overflow: hidden;
       background: var(--airmf-surface-light);
       color: var(--airmf-navy);
-      --explore-pad-block: clamp(0.4rem, 0.9vh, 0.7rem);
-      --explore-pad-inline: clamp(0.95rem, 1.7vw, 1.45rem);
-      --explore-gap: clamp(0.25rem, 0.5vh, 0.4rem);
+      --explore-pad-block: clamp(0.4rem, 0.9cqh, 0.7rem);
+      --explore-pad-inline: clamp(0.95rem, 1.7cqw, 1.45rem);
+      --explore-gap: clamp(0.25rem, 0.5cqh, 0.4rem);
     }
 
     #view-explore .app-header {
       background: var(--airmf-surface-light);
-      border-bottom: 1px solid #d1d5db;
+      border-bottom: none;
     }
 
     #view-explore .app-header h1 {
@@ -1065,12 +1123,13 @@
 
     #view-explore .explore-header {
       flex-shrink: 0;
-      padding: var(--explore-pad-block) var(--explore-pad-inline);
+      padding: clamp(1.15rem, 2.1cqh, 1.65rem) var(--explore-pad-inline) 0.45rem;
     }
 
     #view-explore .explore-header h1 {
-      font-size: clamp(1.15rem, 1.85vh, 1.6rem);
-      line-height: 1.15;
+      font-size: clamp(1.85rem, 3.1cqh, 2.55rem);
+      line-height: 1.08;
+      letter-spacing: -0.024em;
     }
 
     #view-explore .map-intro-lede {
@@ -1090,7 +1149,7 @@
       flex-shrink: 0;
       padding: 0.45rem var(--explore-pad-inline) 0.5rem;
       background: var(--airmf-surface-light);
-      border-top: 1px solid #d1d5db;
+      border-top: none;
     }
 
     #view-explore .explore-footer .btn {
@@ -1128,52 +1187,188 @@
     .explore-sidebar {
       display: flex;
       flex-direction: column;
-      gap: var(--explore-gap);
       min-height: 0;
-      padding: var(--explore-pad-block) var(--explore-pad-inline);
-      border-right: 1px solid #d1d5db;
-      overflow-x: hidden;
-      overflow-y: auto;
+      height: 100%;
+      padding: 0 var(--explore-pad-inline) var(--explore-pad-block);
+      overflow: hidden;
+    }
+
+    .explore-sidebar-content {
+      flex: 1 1 auto;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-height: 0;
+      gap: clamp(1.15rem, 2.1cqh, 1.65rem);
+    }
+
+    .explore-sidebar-intro-block {
+      display: flex;
+      flex-direction: column;
+      gap: clamp(0.3rem, 0.55cqh, 0.45rem);
+      flex-shrink: 0;
     }
 
     .explore-sidebar-intro-heading {
       margin: 0;
       font-family: var(--font-serif);
-      font-size: clamp(0.8rem, 1.25vh, 0.9rem);
+      font-size: clamp(1rem, 1.65cqh, 1.22rem);
       font-weight: 700;
       color: var(--airmf-navy);
       line-height: 1.2;
+      letter-spacing: -0.015em;
     }
 
     .explore-sidebar-intro {
       margin: 0;
-      font-size: clamp(0.7rem, 1.1vh, 0.8rem);
-      line-height: 1.35;
+      font-size: clamp(0.88rem, 1.3cqh, 1rem);
+      line-height: 1.38;
       color: #4b5563;
+    }
+
+    .explore-sidebar-domains {
+      flex: 0 1 auto;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      gap: clamp(0.5rem, 0.9cqh, 0.7rem);
     }
 
     .explore-category-filters {
       display: flex;
       flex-direction: column;
-      gap: clamp(0.22rem, 0.42vh, 0.35rem);
-      min-height: 0;
+      gap: clamp(0.62rem, 1.1cqh, 0.85rem);
       flex: 0 1 auto;
     }
 
     .explore-category-filter {
-      display: block;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: center;
+      gap: 0.22rem;
       width: 100%;
-      text-align: left;
-      padding: clamp(0.42rem, 0.8vh, 0.58rem) 0.65rem clamp(0.42rem, 0.8vh, 0.58rem) 0.55rem;
-      border: 1px solid #e2e8f0;
-      border-left-width: 4px;
-      border-left-color: #cbd5e1;
-      border-radius: 0.3rem;
-      background: var(--airmf-panel);
+      flex: 0 0 auto;
+      min-height: 0;
+      padding: clamp(0.65rem, 1.05cqh, 0.85rem) clamp(0.85rem, 1.2cqw, 1rem);
+      border: none;
+      border-left: 8px solid #cbd5e1;
+      border-radius: 0.35rem;
+      background: #f4f6f8;
       cursor: pointer;
       touch-action: manipulation;
-      transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+      transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
       flex-shrink: 0;
+      text-align: left;
+      position: relative;
+    }
+
+    .explore-category-filter[data-category="foundations"] {
+      background: var(--airmf-foundations-soft);
+      border-left-color: #b8d68a;
+    }
+
+    .explore-category-filter[data-category="development"] {
+      background: var(--airmf-development-soft);
+      border-left-color: #9ed9d2;
+    }
+
+    .explore-category-filter[data-category="adoption"] {
+      background: var(--airmf-adoption-soft);
+      border-left-color: #a8d4f5;
+    }
+
+    .explore-category-filter:not(.is-active) .explore-category-filter-title {
+      color: #5c6570;
+    }
+
+    .explore-category-filter:not(.is-active) .explore-category-filter-desc {
+      color: #7a8694;
+    }
+
+    .explore-category-filter.is-active::after {
+      content: "Active";
+      position: absolute;
+      top: clamp(0.65rem, 1.1cqh, 0.85rem);
+      right: clamp(0.75rem, 1.2cqw, 0.95rem);
+      font-family: var(--font-sans);
+      font-size: clamp(0.58rem, 0.9cqh, 0.68rem);
+      font-weight: 800;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      line-height: 1;
+      padding: 0.22rem 0.45rem;
+      border-radius: 0.25rem;
+      background: rgba(255, 255, 255, 0.88);
+    }
+
+    .explore-category-filter[data-category="foundations"].is-active {
+      border-left-width: 12px;
+      border-left-color: #689f38;
+      background: #b8d68a;
+      box-shadow:
+        0 0 0 2px rgba(104, 159, 56, 0.45),
+        0 4px 18px rgba(104, 159, 56, 0.22);
+    }
+
+    .explore-category-filter[data-category="foundations"].is-active::after {
+      color: #33691e;
+    }
+
+    .explore-category-filter[data-category="foundations"].is-active .explore-category-filter-title {
+      color: #1b5e20;
+      font-weight: 800;
+    }
+
+    .explore-category-filter[data-category="foundations"].is-active .explore-category-filter-desc {
+      color: #33691e;
+      font-weight: 600;
+    }
+
+    .explore-category-filter[data-category="development"].is-active {
+      border-left-width: 12px;
+      border-left-color: #00897b;
+      background: #8ecfca;
+      box-shadow:
+        0 0 0 2px rgba(0, 137, 123, 0.4),
+        0 4px 18px rgba(0, 137, 123, 0.2);
+    }
+
+    .explore-category-filter[data-category="development"].is-active::after {
+      color: #004d40;
+    }
+
+    .explore-category-filter[data-category="development"].is-active .explore-category-filter-title {
+      color: #004d40;
+      font-weight: 800;
+    }
+
+    .explore-category-filter[data-category="development"].is-active .explore-category-filter-desc {
+      color: #00695c;
+      font-weight: 600;
+    }
+
+    .explore-category-filter[data-category="adoption"].is-active {
+      border-left-width: 12px;
+      border-left-color: #1e88e5;
+      background: #9ecbf5;
+      box-shadow:
+        0 0 0 2px rgba(30, 136, 229, 0.4),
+        0 4px 18px rgba(30, 136, 229, 0.2);
+    }
+
+    .explore-category-filter[data-category="adoption"].is-active::after {
+      color: #0d47a1;
+    }
+
+    .explore-category-filter[data-category="adoption"].is-active .explore-category-filter-title {
+      color: #0d47a1;
+      font-weight: 800;
+    }
+
+    .explore-category-filter[data-category="adoption"].is-active .explore-category-filter-desc {
+      color: #1565c0;
+      font-weight: 600;
     }
 
     .explore-category-filter:focus-visible {
@@ -1184,76 +1379,62 @@
     .explore-category-filter-title {
       display: block;
       font-family: var(--font-serif);
-      font-size: clamp(0.76rem, 1.15vh, 0.86rem);
+      font-size: clamp(0.98rem, 1.55cqh, 1.12rem);
       font-weight: 700;
-      color: #6b7280;
-      line-height: 1.2;
-      margin-bottom: 0.18rem;
+      color: #374151;
+      line-height: 1.15;
+      padding-right: 3.25rem;
     }
 
     .explore-category-filter-desc {
       display: block;
-      font-size: clamp(0.66rem, 1vh, 0.74rem);
-      line-height: 1.28;
-      color: #6b7280;
+      font-size: clamp(0.76rem, 1.05cqh, 0.84rem);
+      font-weight: 500;
+      line-height: 1.3;
+      color: #64748b;
     }
 
-    .explore-category-filter[data-category="foundations"].is-active {
-      border-left-color: var(--airmf-foundations);
-      box-shadow: 0 2px 10px rgba(124, 179, 66, 0.12);
-    }
-
-    .explore-category-filter[data-category="foundations"].is-active .explore-category-filter-title {
-      color: var(--airmf-foundations);
-    }
-
-    .explore-category-filter[data-category="development"].is-active {
-      border-left-color: var(--airmf-development);
-      box-shadow: 0 2px 10px rgba(38, 166, 154, 0.12);
-    }
-
-    .explore-category-filter[data-category="development"].is-active .explore-category-filter-title {
-      color: var(--airmf-development);
-    }
-
-    .explore-category-filter[data-category="adoption"].is-active {
-      border-left-color: var(--airmf-adoption);
-      box-shadow: 0 2px 10px rgba(66, 165, 245, 0.12);
-    }
-
-    .explore-category-filter[data-category="adoption"].is-active .explore-category-filter-title {
-      color: var(--airmf-adoption);
+    .explore-category-filter-count {
+      display: none;
     }
 
     .explore-wheel-panel {
       display: flex;
       align-items: center;
-      justify-content: flex-end;
+      justify-content: center;
       min-width: 0;
       min-height: 0;
-      padding: 0.25rem 1.5vw 0.25rem 0.5rem;
+      padding: 0.25rem 1cqw;
       overflow: hidden;
     }
 
     .wheel-stage {
       position: relative;
-      flex: 0 1 auto;
-      min-height: 0;
+      flex: 0 0 auto;
+      width: min(100%, var(--wheel-stage-size, 74cqh), 78rem);
+      height: min(100%, var(--wheel-stage-size, 74cqh), 78rem);
+      max-width: 100%;
       max-height: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      overflow: hidden;
+      aspect-ratio: 1 / 1;
+      transform: translate(var(--wheel-offset-x, 0%), var(--wheel-offset-y, 0%));
     }
 
-    .wheel-artboard {
-      position: relative;
-      flex: 0 1 auto;
-      width: min(68vw, calc(74vh * 1024 / 970), 78rem);
-      max-height: 100%;
-      aspect-ratio: 1024 / 970;
+    .wheel-compass-wrap {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: calc(100% * var(--wheel-compass-scale, 1));
+      height: calc(100% * var(--wheel-compass-scale, 1));
+      transform: translate(-50%, -50%);
+      pointer-events: none;
     }
 
+    .wheel-compass-wrap .wheel-compass-image {
+      width: 100%;
+      height: 100%;
+    }
+
+    .wheel-compass-image,
     .wheel-stage-image {
       display: block;
       width: 100%;
@@ -1261,6 +1442,10 @@
       object-fit: contain;
       user-select: none;
       pointer-events: none;
+    }
+
+    .wheel-compass-image {
+      color: var(--airmf-navy);
     }
 
     .wheel-targets {
@@ -1291,30 +1476,38 @@
       width: 100%;
       height: 100%;
       padding: 0;
-      border: 2px solid rgba(255, 255, 255, 0.7);
+      border: 2px solid transparent;
       border-radius: 50%;
-      background: rgba(255, 255, 255, 0.2);
-      box-shadow:
-        0 0 0 1px rgba(15, 39, 68, 0.16),
-        inset 0 0 10px rgba(255, 255, 255, 0.12);
+      background: transparent;
+      box-shadow: none;
       color: inherit;
       font: inherit;
       cursor: pointer;
       touch-action: manipulation;
-      transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+      overflow: visible;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
     }
 
-    .wheel-target-dot {
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%);
-      width: 24%;
-      height: 24%;
-      border-radius: 50%;
-      background: rgba(15, 39, 68, 0.45);
-      border: 1px solid rgba(255, 255, 255, 0.55);
+    .wheel-target-icon {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
       pointer-events: none;
+      border-radius: 50%;
+      transition: filter 0.15s ease, opacity 0.15s ease;
+    }
+
+    .wheel-target[data-domain="foundations"] .wheel-target-hit {
+      border-color: rgba(139, 195, 74, 0.35);
+    }
+
+    .wheel-target[data-domain="development"] .wheel-target-hit {
+      border-color: rgba(38, 166, 154, 0.35);
+    }
+
+    .wheel-target[data-domain="adoption"] .wheel-target-hit {
+      border-color: rgba(66, 165, 245, 0.35);
     }
 
     .wheel-target-star {
@@ -1333,15 +1526,12 @@
       display: block;
     }
 
-    /* Capability label — offset outward from wheel center, away from artwork. */
+    /* Capability label — offset from icon by labelPosition on .wheel-target. */
     .wheel-target-label {
       position: absolute;
-      left: calc(50% + var(--label-ox, 0rem));
-      top: calc(50% + var(--label-oy, 0rem));
-      transform: translate(-50%, -50%);
       margin: 0;
       font-family: var(--font-serif);
-      font-size: clamp(0.68rem, 0.95vmin, 0.88rem);
+      font-size: clamp(0.68rem, 1.9cqw, 0.88rem);
       font-weight: 600;
       line-height: 1.15;
       text-align: center;
@@ -1351,6 +1541,32 @@
       color: #1e293b;
       pointer-events: none;
       text-shadow: 0 1px 2px rgba(255, 255, 255, 0.85);
+    }
+
+    .wheel-target[data-label-position="top"] .wheel-target-label {
+      left: 50%;
+      bottom: calc(100% + var(--wheel-label-gap, 0.35rem));
+      transform: translateX(-50%);
+    }
+
+    .wheel-target[data-label-position="bottom"] .wheel-target-label {
+      left: 50%;
+      top: calc(100% + var(--wheel-label-gap, 0.35rem));
+      transform: translateX(-50%);
+    }
+
+    .wheel-target[data-label-position="left"] .wheel-target-label {
+      right: calc(100% + var(--wheel-label-gap, 0.35rem));
+      top: 50%;
+      transform: translateY(-50%);
+      text-align: right;
+    }
+
+    .wheel-target[data-label-position="right"] .wheel-target-label {
+      left: calc(100% + var(--wheel-label-gap, 0.35rem));
+      top: 50%;
+      transform: translateY(-50%);
+      text-align: left;
     }
 
     .wheel-target[data-domain="foundations"] .wheel-target-label {
@@ -1365,54 +1581,22 @@
       color: #1565c0;
     }
 
-    .wheel-target[data-domain="foundations"] .wheel-target-hit {
-      border-color: rgba(124, 179, 66, 0.72);
-      background: rgba(124, 179, 66, 0.14);
-    }
-
-    .wheel-target[data-domain="foundations"] .wheel-target-dot {
-      background: rgba(124, 179, 66, 0.65);
-    }
-
-    .wheel-target[data-domain="development"] .wheel-target-hit {
-      border-color: rgba(38, 166, 154, 0.72);
-      background: rgba(38, 166, 154, 0.14);
-    }
-
-    .wheel-target[data-domain="development"] .wheel-target-dot {
-      background: rgba(38, 166, 154, 0.65);
-    }
-
-    .wheel-target[data-domain="adoption"] .wheel-target-hit {
-      border-color: rgba(66, 165, 245, 0.72);
-      background: rgba(66, 165, 245, 0.14);
-    }
-
-    .wheel-target[data-domain="adoption"] .wheel-target-dot {
-      background: rgba(66, 165, 245, 0.65);
-    }
-
     .wheel-target-hit:focus-visible,
     .wheel-target-hit:hover {
-      border-color: rgba(255, 255, 255, 0.95);
-      background: rgba(255, 255, 255, 0.32);
-      box-shadow:
-        0 0 0 3px rgba(59, 130, 246, 0.35),
-        inset 0 0 12px rgba(255, 255, 255, 0.2);
+      border-color: rgba(59, 130, 246, 0.75);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.35);
     }
 
     /* Starred — gold accent ring */
     .wheel-target.is-selected .wheel-target-hit {
       border-color: #f59e0b;
-      background: rgba(245, 158, 11, 0.22);
       box-shadow:
         0 0 0 3px rgba(245, 158, 11, 0.5),
         0 0 16px rgba(245, 158, 11, 0.35);
     }
 
-    .wheel-target.is-selected .wheel-target-dot {
-      background: #f59e0b;
-      border-color: #fffbeb;
+    .wheel-target.is-selected .wheel-target-icon {
+      filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.45));
     }
 
     .wheel-target.is-selected .wheel-target-label {
@@ -1434,7 +1618,6 @@
     /* Recommended — green glow for journey suggestions (not category filters). */
     .wheel-target.is-recommended:not(.is-selected) .wheel-target-hit {
       border-color: var(--airmf-foundations);
-      background: rgba(139, 195, 74, 0.2);
       box-shadow:
         0 0 0 3px rgba(139, 195, 74, 0.55),
         0 0 18px rgba(139, 195, 74, 0.32);
@@ -1449,11 +1632,12 @@
       content: "Suggested";
       position: absolute;
       left: 50%;
-      top: -1.35rem;
+      top: auto;
+      bottom: calc(100% + 0.2rem);
       transform: translateX(-50%);
       padding: 0.1rem 0.38rem;
       font-family: var(--font-sans);
-      font-size: clamp(0.52rem, 0.75vmin, 0.62rem);
+      font-size: clamp(0.52rem, 1.5cqw, 0.62rem);
       font-weight: 700;
       letter-spacing: 0.03em;
       text-transform: uppercase;
@@ -1469,8 +1653,7 @@
     .wheel-target.is-viewed .wheel-target-hit {
       box-shadow:
         0 0 0 2px rgba(148, 163, 184, 0.6),
-        0 0 12px rgba(148, 163, 184, 0.25),
-        inset 0 0 10px rgba(255, 255, 255, 0.12);
+        0 0 12px rgba(148, 163, 184, 0.25);
     }
 
     .wheel-target.is-viewed.is-selected .wheel-target-hit {
@@ -1515,16 +1698,23 @@
       border-radius: 0.2rem;
     }
 
-    @media (max-width: 1100px) {
+    @container app-stage (max-width: 1100px) {
       .explore-map-layout {
         grid-template-columns: 1fr;
         grid-template-rows: auto 1fr;
       }
 
       .explore-sidebar {
-        border-right: none;
-        border-bottom: 1px solid #d1d5db;
+        border-bottom: none;
         padding-bottom: 0.65rem;
+      }
+
+      .explore-sidebar-content {
+        justify-content: flex-start;
+      }
+
+      .explore-category-filters {
+        min-height: auto;
       }
 
       .explore-wheel-panel {
@@ -1532,8 +1722,9 @@
         padding: 0.25rem 0.5rem;
       }
 
-      .wheel-artboard {
-        width: min(92vw, calc(58vh * 1024 / 970));
+      .wheel-stage {
+        width: min(100%, var(--wheel-stage-size, 58cqh), 78rem);
+        height: min(100%, var(--wheel-stage-size, 58cqh), 78rem);
       }
     }
 
@@ -1878,9 +2069,9 @@
       word-break: break-word;
     }
 
-    /* Capability detail modal — light single-page layout with work areas. */
+    /* Capability detail modal — overview + expandable work-area detail states. */
     .modal-overlay {
-      position: fixed;
+      position: absolute;
       inset: 0;
       background: rgba(42, 53, 64, 0.45);
       backdrop-filter: blur(2px);
@@ -1889,7 +2080,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: clamp(0.75rem, 1.5vh, 1.25rem);
+      padding: clamp(0.75rem, 1.5cqh, 1.25rem);
       overflow: hidden;
     }
 
@@ -1900,9 +2091,10 @@
     .modal-content {
       position: relative;
       width: 100%;
-      max-width: min(92vw, 78rem);
-      max-height: calc(100vh - 2rem);
-      max-height: calc(100dvh - 2rem);
+      max-width: min(92%, 78rem);
+      height: min(72cqh, calc(100% - 2rem));
+      min-height: min(72cqh, calc(100% - 2rem));
+      max-height: min(72cqh, calc(100% - 2rem));
       display: flex;
       flex-direction: column;
       padding: 0;
@@ -1912,6 +2104,8 @@
       color: var(--airmf-navy);
       box-shadow: 0 24px 64px rgba(0, 0, 0, 0.22);
       overflow: hidden;
+      --modal-view-duration: 0.4s;
+      --modal-view-ease: ease-in-out;
     }
 
     .modal-topbar {
@@ -1920,7 +2114,7 @@
       align-items: flex-start;
       justify-content: space-between;
       gap: 1rem;
-      padding: clamp(0.65rem, 1.2vh, 0.85rem) clamp(1rem, 1.8vw, 1.35rem) 0;
+      padding: clamp(0.65rem, 1.2cqh, 0.85rem) clamp(1rem, 1.8cqw, 1.35rem) 0;
       min-height: 0;
     }
 
@@ -1974,35 +2168,133 @@
     }
 
     .modal-body {
-      padding: 0 clamp(1rem, 1.8vw, 1.35rem) clamp(0.85rem, 1.5vh, 1.1rem);
+      padding: 0 clamp(1rem, 1.8cqw, 1.35rem) clamp(0.85rem, 1.5cqh, 1.1rem);
       overflow-y: auto;
-      flex: 1 1 auto;
+      flex: 1 1 0;
       min-height: 0;
       -webkit-overflow-scrolling: touch;
     }
 
-    .modal-overview {
-      display: grid;
-      grid-template-columns: minmax(5.5rem, 14%) minmax(0, 1fr) minmax(6rem, 16%);
-      gap: clamp(0.65rem, 1.2vw, 1rem);
-      align-items: stretch;
-      padding-bottom: clamp(0.65rem, 1.2vh, 0.9rem);
+    .modal-back-overview {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      margin: 0;
+      padding: 0.2rem 0.45rem 0.2rem 0;
+      font-family: var(--font-sans);
+      font-size: clamp(0.78rem, 1.1cqh, 0.88rem);
+      font-weight: 650;
+      color: #475569;
+      background: none;
+      border: none;
+      cursor: pointer;
+      touch-action: manipulation;
+      overflow: hidden;
+      max-height: 0;
+      opacity: 0;
+      transform: translateY(0.35rem);
+      pointer-events: none;
+      transition:
+        opacity var(--modal-view-duration) var(--modal-view-ease),
+        max-height var(--modal-view-duration) var(--modal-view-ease),
+        margin var(--modal-view-duration) var(--modal-view-ease),
+        transform var(--modal-view-duration) var(--modal-view-ease);
     }
 
-    @media (max-width: 900px) {
+    .modal-back-overview:active {
+      color: var(--airmf-navy);
+    }
+
+    .modal-back-overview:focus-visible {
+      outline: 2px solid var(--airmf-foundations);
+      outline-offset: 2px;
+      border-radius: 0.2rem;
+    }
+
+    .modal-back-overview-icon {
+      font-size: 1rem;
+      line-height: 1;
+    }
+
+    .modal-content[data-modal-view="work-area"] .modal-back-overview {
+      max-height: 2.5rem;
+      opacity: 1;
+      margin: 0 0 clamp(0.35rem, 0.65cqh, 0.5rem);
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+
+    .modal-overview {
+      display: grid;
+      grid-template-columns: minmax(9.5rem, 30%) minmax(0, 1fr);
+      gap: clamp(0.85rem, 1.5cqw, 1.25rem);
+      align-items: stretch;
+      padding-bottom: clamp(0.65rem, 1.2cqh, 0.9rem);
+      transform: translateY(0);
+      transition:
+        grid-template-columns var(--modal-view-duration) var(--modal-view-ease),
+        gap var(--modal-view-duration) var(--modal-view-ease),
+        padding var(--modal-view-duration) var(--modal-view-ease),
+        transform var(--modal-view-duration) var(--modal-view-ease);
+    }
+
+    .modal-content[data-modal-view="work-area"] .modal-overview {
+      grid-template-columns: 1fr;
+      gap: 0;
+      padding-bottom: clamp(0.35rem, 0.65cqh, 0.5rem);
+      align-items: start;
+      transform: translateY(-0.35rem);
+    }
+
+    @container app-stage (max-width: 900px) {
       .modal-overview {
         grid-template-columns: 1fr;
       }
+
+      .modal-content[data-modal-view="work-area"] .modal-overview {
+        grid-template-columns: 1fr;
+      }
+
       .modal-overview-art {
         min-height: 6rem;
       }
     }
 
     .modal-overview-art {
-      min-height: clamp(6rem, 14vh, 9rem);
+      min-height: clamp(10rem, 22cqh, 15rem);
+      max-height: 24rem;
       background: linear-gradient(145deg, #f8fafc 0%, #e2e8f0 100%);
       border: 1px solid #e2e8f0;
       border-radius: 0.35rem;
+      opacity: 1;
+      transform: translateY(0);
+      overflow: hidden;
+      transition:
+        min-height var(--modal-view-duration) var(--modal-view-ease),
+        max-height var(--modal-view-duration) var(--modal-view-ease),
+        opacity var(--modal-view-duration) var(--modal-view-ease),
+        transform var(--modal-view-duration) var(--modal-view-ease),
+        border-width var(--modal-view-duration) var(--modal-view-ease),
+        margin var(--modal-view-duration) var(--modal-view-ease);
+    }
+
+    .modal-overview-art img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      min-height: clamp(10rem, 22cqh, 15rem);
+      object-fit: contain;
+      object-position: center;
+    }
+
+    .modal-content[data-modal-view="work-area"] .modal-overview-art {
+      min-height: 0;
+      max-height: 0;
+      opacity: 0;
+      margin: 0;
+      border-width: 0;
+      transform: translateY(-0.75rem);
+      pointer-events: none;
     }
 
     .modal-overview-main {
@@ -2010,30 +2302,112 @@
       flex-direction: column;
       gap: 0.45rem;
       min-width: 0;
+      min-height: 0;
+    }
+
+    .modal-overview-bullets-heading,
+    .modal-overview-closing {
+      transform: translateY(0);
+      transition:
+        opacity var(--modal-view-duration) var(--modal-view-ease),
+        max-height var(--modal-view-duration) var(--modal-view-ease),
+        margin var(--modal-view-duration) var(--modal-view-ease),
+        transform var(--modal-view-duration) var(--modal-view-ease);
+      overflow: hidden;
+    }
+
+    .modal-overview-bullets-heading {
+      margin: 0.2rem 0 0;
+      font-size: clamp(0.74rem, 1.05cqh, 0.82rem);
+      font-weight: 650;
+      color: #334155;
+      max-height: 3rem;
+      opacity: 1;
+    }
+
+    .modal-content[data-modal-view="work-area"] .modal-overview-bullets-heading {
+      max-height: 0;
+      opacity: 0;
+      margin: 0;
+      transform: translateY(-0.65rem);
+    }
+
+    .modal-overview-closing {
+      margin: 0.15rem 0 0;
+      font-size: clamp(0.74rem, 1.05cqh, 0.82rem);
+      line-height: 1.4;
+      color: #475569;
+      max-height: 8rem;
+      opacity: 1;
+    }
+
+    .modal-content[data-modal-view="work-area"] .modal-overview-closing {
+      max-height: 0;
+      opacity: 0;
+      margin: 0;
+      transform: translateY(-0.65rem);
     }
 
     .modal-title {
       margin: 0;
-      font-size: clamp(1.15rem, 2vh, 1.45rem);
+      font-size: clamp(1.15rem, 2cqh, 1.45rem);
       font-weight: 700;
       letter-spacing: -0.01em;
       color: var(--airmf-navy);
       line-height: 1.2;
+      transition: font-size var(--modal-view-duration) var(--modal-view-ease);
+    }
+
+    .modal-content[data-modal-view="work-area"] .modal-title {
+      font-size: clamp(1rem, 1.65cqh, 1.2rem);
+    }
+
+    .modal-overview-lede,
+    .modal-overview-bullets,
+    .modal-case-study-cta {
+      transform: translateY(0);
+      transition:
+        opacity var(--modal-view-duration) var(--modal-view-ease),
+        max-height var(--modal-view-duration) var(--modal-view-ease),
+        margin var(--modal-view-duration) var(--modal-view-ease),
+        padding var(--modal-view-duration) var(--modal-view-ease),
+        transform var(--modal-view-duration) var(--modal-view-ease),
+        border-width var(--modal-view-duration) var(--modal-view-ease);
+      overflow: hidden;
     }
 
     .modal-overview-lede {
       margin: 0;
-      font-size: clamp(0.78rem, 1.15vh, 0.88rem);
+      font-size: clamp(0.78rem, 1.15cqh, 0.88rem);
       line-height: 1.45;
       color: #334155;
+      max-height: 12rem;
+      opacity: 1;
+    }
+
+    .modal-content[data-modal-view="work-area"] .modal-overview-lede {
+      max-height: 0;
+      opacity: 0;
+      margin: 0;
+      transform: translateY(-0.65rem);
     }
 
     .modal-overview-bullets {
-      margin: 0.15rem 0 0;
+      margin: 0.1rem 0 0;
       padding-left: 1.1rem;
-      font-size: clamp(0.74rem, 1.05vh, 0.82rem);
+      font-size: clamp(0.74rem, 1.05cqh, 0.82rem);
       line-height: 1.4;
       color: #475569;
+      max-height: 14rem;
+      opacity: 1;
+    }
+
+    .modal-content[data-modal-view="work-area"] .modal-overview-bullets {
+      max-height: 0;
+      opacity: 0;
+      margin: 0;
+      padding: 0;
+      transform: translateY(-0.65rem);
     }
 
     .modal-overview-bullets li {
@@ -2048,10 +2422,11 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      min-height: 100%;
-      padding: 0.65rem;
+      width: 100%;
+      margin-top: clamp(0.35rem, 0.65cqh, 0.55rem);
+      padding: clamp(0.55rem, 1cqh, 0.7rem) 0.75rem;
       font-family: var(--font-sans);
-      font-size: clamp(0.72rem, 1vh, 0.8rem);
+      font-size: clamp(0.72rem, 1cqh, 0.8rem);
       font-weight: 650;
       color: #64748b;
       text-align: center;
@@ -2060,6 +2435,20 @@
       border-radius: 0.35rem;
       cursor: not-allowed;
       touch-action: manipulation;
+      max-height: 6rem;
+      opacity: 1;
+      flex-shrink: 0;
+    }
+
+    .modal-content[data-modal-view="work-area"] .modal-case-study-cta {
+      max-height: 0;
+      opacity: 0;
+      min-height: 0;
+      padding: 0;
+      margin: 0;
+      border-width: 0;
+      transform: translateY(-0.65rem);
+      pointer-events: none;
     }
 
     .modal-case-study-cta:not(:disabled) {
@@ -2072,24 +2461,34 @@
     }
 
     .modal-divider {
-      margin: 0 0 clamp(0.55rem, 1vh, 0.75rem);
+      margin: 0 0 clamp(0.55rem, 1cqh, 0.75rem);
       border: none;
       border-top: 1px solid #e2e8f0;
+      transition: margin var(--modal-view-duration) var(--modal-view-ease);
+    }
+
+    .modal-content[data-modal-view="work-area"] .modal-divider {
+      margin-bottom: clamp(0.35rem, 0.65cqh, 0.5rem);
     }
 
     .modal-work-area-nav {
       position: sticky;
       top: 0;
       z-index: 2;
-      margin: 0 0 clamp(0.65rem, 1.1vh, 0.85rem);
+      margin: 0 0 clamp(0.65rem, 1.1cqh, 0.85rem);
       padding: 0.35rem 0 0.5rem;
       background: var(--airmf-panel);
       border-bottom: 1px solid #f1f5f9;
+      transition: margin var(--modal-view-duration) var(--modal-view-ease);
+    }
+
+    .modal-content[data-modal-view="work-area"] .modal-work-area-nav {
+      margin-bottom: clamp(0.45rem, 0.8cqh, 0.6rem);
     }
 
     .modal-work-tabs {
       display: flex;
-      gap: clamp(0.35rem, 0.65vw, 0.5rem);
+      gap: clamp(0.35rem, 0.65cqw, 0.5rem);
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
       padding-bottom: 0.15rem;
@@ -2100,12 +2499,12 @@
       align-items: center;
       gap: 0.45rem;
       flex: 1 1 0;
-      min-width: min(11rem, 42vw);
+      min-width: min(11rem, 42cqw);
       max-width: 14rem;
       padding: 0.5rem 0.55rem;
       text-align: left;
       font-family: var(--font-sans);
-      font-size: clamp(0.62rem, 0.95vh, 0.72rem);
+      font-size: clamp(0.62rem, 0.95cqh, 0.72rem);
       font-weight: 600;
       line-height: 1.25;
       color: #64748b;
@@ -2114,7 +2513,7 @@
       border-radius: 0.3rem;
       cursor: pointer;
       touch-action: manipulation;
-      transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+      transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
     }
 
     .modal-work-tab-marker {
@@ -2133,6 +2532,8 @@
       color: var(--airmf-navy);
       background: var(--airmf-foundations-soft);
       border-color: #c5e1a5;
+      box-shadow: 0 0 0 1px rgba(139, 195, 74, 0.35);
+      opacity: 1;
     }
 
     .modal-work-tab.is-active .modal-work-tab-marker {
@@ -2146,16 +2547,52 @@
 
     .modal-work-details {
       min-height: 0;
+      overflow: hidden;
+      max-height: 0;
+      opacity: 0;
+      transform: translateY(1.25rem);
+      transition:
+        max-height var(--modal-view-duration) var(--modal-view-ease),
+        opacity var(--modal-view-duration) var(--modal-view-ease),
+        transform var(--modal-view-duration) var(--modal-view-ease);
+    }
+
+    .modal-content[data-modal-view="work-area"] .modal-work-details:not(:empty) {
+      max-height: 200rem;
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .modal-content {
+        --modal-view-duration: 0.01s;
+      }
+
+      .modal-overview,
+      .modal-overview-art,
+      .modal-overview-lede,
+      .modal-overview-bullets-heading,
+      .modal-overview-bullets,
+      .modal-overview-closing,
+      .modal-case-study-cta,
+      .modal-back-overview,
+      .modal-divider,
+      .modal-work-area-nav,
+      .modal-work-details,
+      .modal-title {
+        transition: none !important;
+      }
     }
 
     .modal-work-detail {
       margin: 0;
+      padding-top: 0.1rem;
     }
 
     .modal-work-detail-title {
       margin: 0 0 0.25rem;
       font-family: var(--font-serif);
-      font-size: clamp(1rem, 1.6vh, 1.15rem);
+      font-size: clamp(1rem, 1.6cqh, 1.15rem);
       font-weight: 700;
       color: var(--airmf-navy);
       line-height: 1.25;
@@ -2163,7 +2600,7 @@
 
     .modal-work-detail-subtitle {
       margin: 0 0 0.75rem;
-      font-size: clamp(0.78rem, 1.1vh, 0.88rem);
+      font-size: clamp(0.78rem, 1.1cqh, 0.88rem);
       line-height: 1.4;
       color: #475569;
     }
@@ -2171,17 +2608,17 @@
     .modal-work-panels {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: clamp(0.55rem, 1vw, 0.75rem);
+      gap: clamp(0.55rem, 1cqw, 0.75rem);
     }
 
-    @media (max-width: 768px) {
+    @container app-stage (max-width: 768px) {
       .modal-work-panels {
         grid-template-columns: 1fr;
       }
     }
 
     .modal-work-panel {
-      padding: clamp(0.65rem, 1.1vh, 0.85rem) clamp(0.7rem, 1.1vw, 0.9rem);
+      padding: clamp(0.65rem, 1.1cqh, 0.85rem) clamp(0.7rem, 1.1cqw, 0.9rem);
       background: var(--airmf-foundations-soft);
       border: 1px solid #dcedc8;
       border-radius: 0.35rem;
@@ -2189,7 +2626,7 @@
 
     .modal-work-panel-heading {
       margin: 0 0 0.45rem;
-      font-size: clamp(0.72rem, 1.05vh, 0.8rem);
+      font-size: clamp(0.72rem, 1.05cqh, 0.8rem);
       font-weight: 700;
       color: var(--airmf-navy);
       line-height: 1.3;
@@ -2198,7 +2635,7 @@
     .modal-work-panel-list {
       margin: 0;
       padding-left: 1rem;
-      font-size: clamp(0.68rem, 1vh, 0.76rem);
+      font-size: clamp(0.68rem, 1cqh, 0.76rem);
       line-height: 1.4;
       color: #334155;
     }
@@ -2213,7 +2650,7 @@
 
     .modal-footer {
       flex-shrink: 0;
-      padding: 0.75rem clamp(1rem, 1.8vw, 1.35rem) 0.9rem;
+      padding: 0.75rem clamp(1rem, 1.8cqw, 1.35rem) 0.9rem;
       border-top: 1px solid #e2e8f0;
       background: #f8fafc;
       display: flex;
@@ -2244,7 +2681,7 @@
       display: flex;
       align-items: baseline;
       gap: 0.35rem;
-      font-size: clamp(0.72rem, 1.05vh, 0.82rem);
+      font-size: clamp(0.72rem, 1.05cqh, 0.82rem);
       color: #0f766e;
       flex: 1 1 auto;
       min-width: 0;
@@ -2287,11 +2724,11 @@
 
     /* Toast: transient feedback for selection changes / clear action. */
     .toast {
-      position: fixed;
+      position: absolute;
       left: 50%;
       bottom: 1.5rem;
       transform: translate(-50%, 0.5rem);
-      max-width: calc(100vw - 2rem);
+      max-width: calc(100% - 2rem);
       padding: 0.7rem 1.05rem;
       background: #1e293b;
       color: #e8ecf1;
@@ -2329,7 +2766,7 @@
 
     /* Capability preview: right-side concept panel with art placeholder. */
     .preview-overlay {
-      position: fixed;
+      position: absolute;
       inset: 0;
       background: rgba(15, 39, 68, 0.45);
       backdrop-filter: blur(2px);
@@ -2347,8 +2784,8 @@
 
     .preview-content {
       position: relative;
-      width: min(28rem, 34vw);
-      max-height: calc(100vh - 2.5rem);
+      width: min(28rem, 34%);
+      max-height: calc(100% - 2.5rem);
       display: flex;
       flex-direction: column;
       padding: 0;
@@ -2475,14 +2912,14 @@
 
     /* Guided Experience: two-step overlay on the Capability Map. */
     .guided-overlay {
-      position: fixed;
+      position: absolute;
       inset: 0;
       z-index: 40;
       display: grid;
       grid-template-columns: minmax(0, 40%) 1fr;
       grid-template-rows: minmax(0, 1fr);
       height: 100%;
-      max-height: 100dvh;
+      max-height: 100%;
       padding: 0;
       background: transparent;
       pointer-events: none;
@@ -2500,27 +2937,130 @@
       grid-column: 1;
       grid-row: 1;
       background: var(--airmf-panel);
-      padding: clamp(0.85rem, 1.8vh, 1.35rem) clamp(1rem, 1.8vw, 1.6rem);
+      padding: clamp(1.1rem, 2.2cqh, 1.65rem) clamp(1.1rem, 2cqw, 1.75rem);
       display: flex;
       flex-direction: column;
-      justify-content: flex-start;
+      justify-content: stretch;
       min-height: 0;
-      max-height: 100vh;
+      max-height: 100%;
       box-shadow: 8px 0 32px rgba(0, 0, 0, 0.12);
-      overflow-x: hidden;
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
+      overflow: hidden;
     }
 
     .guided-panel--map-scrim {
       grid-column: 2;
       grid-row: 1;
       display: flex;
-      align-items: flex-end;
-      justify-content: center;
+      flex-direction: column;
+      align-items: stretch;
+      justify-content: flex-end;
       min-height: 0;
-      padding: clamp(1.5rem, 3vh, 2.5rem);
-      background: rgba(42, 53, 64, 0.38);
+      padding: 0;
+      background: rgba(42, 53, 64, 0.28);
+      overflow: hidden;
+    }
+
+    .guided-map-preview-spacer {
+      flex: 1 1 auto;
+      min-height: 0;
+      pointer-events: none;
+    }
+
+    .guided-alt-explore {
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.85rem;
+      width: 100%;
+      padding: 1.15rem 1.75rem 1.5rem;
+      background: linear-gradient(
+        180deg,
+        transparent 0%,
+        rgba(15, 20, 25, 0.55) 38%,
+        rgba(15, 20, 25, 0.84) 100%
+      );
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .guided-alt-explore--compact {
+      padding: 0.85rem 1.25rem 1.15rem;
+      gap: 0.7rem;
+      margin-top: auto;
+      flex-shrink: 0;
+      background: linear-gradient(
+        180deg,
+        transparent 0%,
+        rgba(15, 20, 25, 0.45) 20%,
+        rgba(15, 20, 25, 0.78) 100%
+      );
+    }
+
+    .guided-overlay[data-guided-step="recommendations"] .guided-alt-explore--compact {
+      padding: 0.55rem 1rem 0.75rem;
+      gap: 0.45rem;
+      background: linear-gradient(
+        180deg,
+        transparent 0%,
+        rgba(15, 20, 25, 0.28) 30%,
+        rgba(15, 20, 25, 0.55) 100%
+      );
+      border-top-color: rgba(255, 255, 255, 0.06);
+    }
+
+    .guided-overlay[data-guided-step="recommendations"] .guided-alt-explore--compact .guided-alt-explore-copy {
+      font-size: 0.8rem;
+      line-height: 1.38;
+      color: rgba(226, 232, 240, 0.82);
+    }
+
+    .guided-overlay[data-guided-step="recommendations"] .guided-alt-explore--compact .btn-guided-explore-secondary {
+      min-height: 2.55rem;
+      max-width: 16rem;
+      padding: 0.55rem 1rem;
+      font-size: 0.86rem;
+      font-weight: 600;
+      border-color: #e2e8f0;
+      background: rgba(255, 255, 255, 0.9);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .guided-alt-explore-copy {
+      margin: 0;
+      max-width: 22rem;
+      font-size: 0.95rem;
+      font-weight: 500;
+      line-height: 1.45;
+      color: #f1f5f9;
+      text-align: center;
+      text-wrap: balance;
+    }
+
+    .btn-guided-explore-secondary {
+      width: 100%;
+      max-width: 22rem;
+      min-height: 3.35rem;
+      padding: 0.85rem 1.5rem;
+      font-family: var(--font-sans);
+      font-size: 1rem;
+      font-weight: 650;
+      color: var(--airmf-navy);
+      background: var(--airmf-panel);
+      border: 2px solid #cbd5e1;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      touch-action: manipulation;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+    }
+
+    .btn-guided-explore-secondary:active {
+      background: #f1f5f9;
+      border-color: #94a3b8;
+    }
+
+    .btn-guided-explore-secondary:focus-visible {
+      outline: 2px solid #93c5fd;
+      outline-offset: 2px;
     }
 
     .guided-panel--recommendations {
@@ -2529,16 +3069,14 @@
       grid-row: 1;
       width: 100%;
       min-height: 0;
-      max-height: 100dvh;
+      max-height: 100%;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      gap: clamp(0.65rem, 1.3vh, 1rem);
-      padding: clamp(0.85rem, 1.6vh, 1.35rem) clamp(1rem, 1.5vw, 1.5rem);
+      justify-content: flex-start;
+      gap: clamp(0.65rem, 1.3cqh, 1rem);
+      padding: clamp(0.85rem, 1.6cqh, 1.35rem) clamp(1rem, 1.5cqw, 1.5rem);
       background: rgba(42, 53, 64, 0.38);
-      overflow-x: hidden;
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
+      overflow: hidden;
     }
 
     .guided-overlay[data-guided-step="recommendations"] .guided-panel--map-scrim {
@@ -2551,34 +3089,55 @@
 
     .guided-recommendations-heading {
       margin: 0;
-      padding: 0.55rem 1.1rem;
+      padding: 0.6rem 1.2rem;
       font-family: var(--font-serif);
-      font-size: clamp(1rem, 1.8vh, 1.25rem);
+      font-size: clamp(1.05rem, 1.9cqh, 1.3rem);
       font-weight: 700;
       color: #fff;
       text-align: center;
       background: rgba(0, 0, 0, 0.55);
       border-radius: 0.4rem;
       line-height: 1.3;
+      flex-shrink: 0;
     }
 
     .guided-recommendation-cards {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: clamp(0.5rem, 1vw, 0.85rem);
+      display: flex;
+      flex-wrap: nowrap;
+      justify-content: center;
+      align-items: stretch;
+      align-content: center;
+      align-self: center;
+      gap: clamp(0.65rem, 1.2cqw, 1rem);
       width: 100%;
-      max-width: 52rem;
+      max-width: 58rem;
+      flex: 1 1 auto;
+      min-height: 0;
+      margin: auto 0;
+    }
+
+    @keyframes guided-recommendation-enter {
+      from {
+        opacity: 0;
+        transform: translateY(0.75rem);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     .guided-recommendation-card {
       display: flex;
       flex-direction: column;
-      background: var(--airmf-panel);
-      border-radius: 0.5rem;
-      border: 1px solid #e2e8f0;
-      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
-      overflow: hidden;
+      flex: 1 1 0;
       min-width: 0;
+      max-width: 19rem;
+      background: var(--airmf-panel);
+      border-radius: 0.55rem;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 10px 32px rgba(0, 0, 0, 0.2);
+      overflow: hidden;
       cursor: pointer;
       touch-action: manipulation;
       text-align: left;
@@ -2587,6 +3146,25 @@
       padding: 0;
       appearance: none;
       -webkit-appearance: none;
+      animation: guided-recommendation-enter 0.45s ease-out both;
+    }
+
+    .guided-recommendation-card:nth-child(1) {
+      animation-delay: 0.05s;
+    }
+
+    .guided-recommendation-card:nth-child(2) {
+      animation-delay: 0.13s;
+    }
+
+    .guided-recommendation-card:nth-child(3) {
+      animation-delay: 0.21s;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .guided-recommendation-card {
+        animation: none;
+      }
     }
 
     .guided-recommendation-card:active {
@@ -2599,7 +3177,7 @@
     }
 
     .guided-recommendation-art {
-      height: clamp(3.5rem, 8vh, 5.5rem);
+      height: clamp(4rem, 9.5cqh, 6.5rem);
       background: linear-gradient(145deg, #f1f5f9 0%, #e2e8f0 100%);
       border-bottom: 1px solid #e2e8f0;
     }
@@ -2607,15 +3185,15 @@
     .guided-recommendation-body {
       display: flex;
       flex-direction: column;
-      gap: 0.45rem;
-      padding: 0.75rem 0.85rem 0.85rem;
+      gap: 0.55rem;
+      padding: 0.9rem 1rem 1rem;
       flex: 1 1 auto;
     }
 
     .guided-recommendation-title {
       margin: 0;
       font-family: var(--font-serif);
-      font-size: clamp(0.82rem, 1.2vh, 0.95rem);
+      font-size: clamp(0.9rem, 1.35cqh, 1.05rem);
       font-weight: 700;
       color: var(--airmf-navy);
       line-height: 1.25;
@@ -2623,7 +3201,7 @@
 
     .guided-recommendation-desc {
       margin: 0;
-      font-size: clamp(0.72rem, 1vh, 0.8rem);
+      font-size: clamp(0.78rem, 1.1cqh, 0.88rem);
       line-height: 1.35;
       color: #475569;
       flex: 1 1 auto;
@@ -2631,10 +3209,10 @@
 
     .guided-recommendation-card .btn-primary {
       width: 100%;
-      min-height: 2.5rem;
-      margin-top: 0.25rem;
+      min-height: 2.75rem;
+      margin-top: 0.35rem;
       background: var(--airmf-foundations);
-      font-size: 0.88rem;
+      font-size: 0.92rem;
       pointer-events: none;
     }
 
@@ -2643,71 +3221,52 @@
     }
 
     .guided-entry--overlay {
+      flex: 1 1 auto;
       width: 100%;
-      max-width: 28rem;
-      gap: clamp(0.55rem, 1.1vh, 0.85rem);
+      min-height: 0;
+      max-width: none;
+      gap: 0;
+      justify-content: flex-start;
     }
 
     .guided-entry--overlay .guided-entry-heading {
-      font-size: clamp(1.1rem, 2.1vh, 1.45rem);
-      line-height: 1.2;
+      flex-shrink: 0;
+      font-size: clamp(1.65rem, 3.5cqh, 2.25rem);
+      line-height: 1.12;
+      letter-spacing: -0.025em;
+      margin-bottom: clamp(0.9rem, 1.75cqh, 1.3rem);
     }
 
     .guided-entry--overlay .guided-entry-sub {
-      font-size: clamp(0.82rem, 1.3vh, 0.95rem);
+      flex-shrink: 0;
+      font-size: clamp(0.88rem, 1.45cqh, 1.05rem);
+      margin-bottom: clamp(1.15rem, 2.25cqh, 1.65rem);
     }
 
     .guided-entry--overlay .guided-entry-buttons {
-      gap: clamp(0.4rem, 0.75vh, 0.6rem);
+      flex: 1 1 auto;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-evenly;
+      gap: clamp(0.7rem, 1.35cqh, 1rem);
+      min-height: 0;
     }
 
     .guided-entry--overlay .btn-response {
-      min-height: 0;
-      padding: clamp(0.5rem, 0.95vh, 0.75rem) clamp(0.7rem, 1.1vw, 0.95rem);
-      gap: 0.2rem;
+      flex: 1 1 0;
+      min-height: clamp(4.75rem, 9cqh, 5.85rem);
+      padding: clamp(0.8rem, 1.25cqh, 1.05rem) clamp(0.9rem, 1.25cqw, 1.15rem);
+      gap: 0.3rem;
     }
 
     .guided-entry--overlay .btn-response-title {
-      font-size: clamp(0.85rem, 1.35vh, 1rem);
+      font-size: clamp(0.95rem, 1.55cqh, 1.12rem);
       line-height: 1.2;
     }
 
     .guided-entry--overlay .btn-response-desc {
-      font-size: clamp(0.68rem, 1.05vh, 0.78rem);
-      line-height: 1.3;
-    }
-
-    .btn-explore-freely-escape {
-      min-width: min(18rem, 80%);
-      min-height: 3rem;
-      padding: 0 1.25rem;
-      background: var(--airmf-panel);
-      border: 2px solid #1e293b;
-      color: var(--airmf-navy);
-      font-weight: 650;
-      border-radius: 0.45rem;
-    }
-
-    .btn-explore-freely-escape:active {
-      background: #f1f5f9;
-    }
-
-    .btn-explore-freely-guided {
-      min-width: min(16rem, 70%);
-      min-height: 3rem;
-      padding: 0 1.25rem;
-      background: var(--airmf-panel);
-      border: 2px solid #1e293b;
-      color: var(--airmf-navy);
-      font-weight: 650;
-      border-radius: 0.45rem;
-      font-family: var(--font-sans);
-      cursor: pointer;
-      touch-action: manipulation;
-    }
-
-    .btn-explore-freely-guided:active {
-      background: #f1f5f9;
+      font-size: clamp(0.75rem, 1.15cqh, 0.86rem);
+      line-height: 1.32;
     }
 
     @media (max-width: 1100px) {
@@ -2725,10 +3284,29 @@
         grid-row: 2;
       }
       .guided-panel--map-scrim {
-        min-height: 10rem;
+        min-height: 9rem;
+      }
+
+      .guided-alt-explore {
+        padding: 0.85rem 1rem 1rem;
+      }
+
+      .guided-alt-explore-copy {
+        font-size: 0.88rem;
+      }
+
+      .btn-guided-explore-secondary {
+        min-height: 3rem;
+        font-size: 0.92rem;
       }
       .guided-recommendation-cards {
-        grid-template-columns: 1fr;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .guided-recommendation-card {
+        width: 100%;
+        max-width: 22rem;
       }
       .preview-overlay {
         padding: 1rem;
@@ -2743,6 +3321,9 @@
   </style>
 </head>
 <body>
+  <div class="app-shell">
+    <div class="app-stage-scaler">
+    <div class="app-stage" id="app-stage">
   <!-- Touchscreen Entry: shared Grid Room launcher. Single-screen layout —
        header at top, four large experience cards centered in the body. -->
   <div id="view-home" class="view is-active" aria-hidden="false">
@@ -2844,35 +3425,40 @@
     </header>
     <div class="view-body explore-body">
       <div class="explore-map-layout">
-        <aside class="explore-sidebar" aria-label="Capability map filters">
-          <h2 class="explore-sidebar-intro-heading">Introduction + How to</h2>
-          <p class="explore-sidebar-intro">
-            Use the compass to explore capabilities. Tap a capability to learn more, then star the ones you want to save to your inventory.
-          </p>
-          <div class="map-journey-context" id="map-journey-context" hidden>
-            <div class="map-journey-context-header">
-              <span class="map-journey-context-eyebrow">Your AI journey</span>
-              <button type="button" class="btn-journey-edit" id="btn-edit-journey">Edit</button>
-            </div>
-            <p class="map-journey-context-value" id="map-journey-context-value"></p>
-            <p class="map-journey-context-hint">Green rings and &ldquo;Suggested&rdquo; labels mark capabilities for your journey. Domain filters below only dim unrelated areas.</p>
+        <aside class="explore-sidebar" aria-label="Capability map navigation">
+          <div class="explore-sidebar-content">
+            <section class="explore-sidebar-intro-block" aria-labelledby="explore-intro-heading">
+              <h2 class="explore-sidebar-intro-heading" id="explore-intro-heading">Introduction + How to</h2>
+              <p class="explore-sidebar-intro">
+                Select a domain or tap a capability on the compass to begin exploring.
+              </p>
+            </section>
+            <section class="explore-sidebar-domains" aria-labelledby="explore-domains-heading">
+              <h2 class="explore-sidebar-filters-heading" id="explore-domains-heading">Filter by Group</h2>
+              <div id="explore-category-filters" class="explore-category-filters" role="group" aria-label="Filter capabilities by group"></div>
+            </section>
           </div>
-          <h2 class="explore-sidebar-filters-heading">Filter by domain</h2>
-          <div id="explore-category-filters" class="explore-category-filters" role="group" aria-label="Filter capabilities by domain"></div>
+          <div class="map-journey-context" id="map-journey-context" hidden>
+            <span class="map-journey-context-eyebrow">Your journey</span>
+            <div class="map-journey-context-row">
+              <p class="map-journey-context-value" id="map-journey-context-value"></p>
+              <button type="button" class="btn-journey-edit" id="btn-edit-journey">Change</button>
+            </div>
+          </div>
         </aside>
         <div class="explore-wheel-panel">
-          <div class="wheel-stage">
-            <div class="wheel-artboard">
+          <div class="wheel-stage" id="wheel-stage">
+            <div class="wheel-compass-wrap" aria-hidden="true">
               <img
-                class="wheel-stage-image"
-                src="assets/airmf-wheel.png"
-                width="1024"
-                height="970"
+                class="wheel-compass-image"
+                src="assets/wheel/wheel-compass.svg"
+                width="640"
+                height="640"
                 alt=""
                 decoding="async"
               />
-              <div id="explore-card-host" class="wheel-targets" role="group" aria-label="aiRMF capabilities"></div>
             </div>
+            <div id="explore-card-host" class="wheel-targets" role="group" aria-label="aiRMF capabilities"></div>
           </div>
         </div>
       </div>
@@ -2940,7 +3526,6 @@
       </details>
     </div>
     <footer class="view-footer" aria-label="AI Focus Map actions">
-      <button type="button" class="btn btn-ghost btn-clear" id="btn-focus-home">Exit Experience</button>
       <button type="button" class="btn btn-ghost btn-large" id="btn-back-explore">
         Back to Capability Map
       </button>
@@ -2949,7 +3534,7 @@
 
   <!-- Capability detail modal — work-area layout populated by openCapabilityModal(). -->
   <div id="capability-modal" class="modal-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="modal-title">
-    <div class="modal-content">
+    <div class="modal-content" id="modal-content" data-modal-view="overview">
       <div class="modal-topbar">
         <p class="modal-recommend-context" id="modal-recommend-context" hidden>
           <span>Recommended for:</span>
@@ -2961,10 +3546,14 @@
         </div>
       </div>
       <div class="modal-body" id="modal-body">
+        <button type="button" id="modal-back-overview" class="modal-back-overview" aria-hidden="true" tabindex="-1">
+          <span class="modal-back-overview-icon" aria-hidden="true">↑</span>
+          Back to overview
+        </button>
         <div id="modal-overview-host"></div>
         <hr class="modal-divider" aria-hidden="true" />
         <div class="modal-work-area-nav" id="modal-work-tabs-host"></div>
-        <div id="modal-work-details-host" class="modal-work-details"></div>
+        <div id="modal-work-details-host" class="modal-work-details" aria-live="polite"></div>
       </div>
       <footer class="modal-footer">
         <nav class="modal-pager" aria-label="Capability navigation">
@@ -3003,27 +3592,43 @@
         <div id="guided-entry-host" class="guided-entry-buttons" role="group" aria-label="AI journey stage"></div>
       </section>
     </div>
-    <div class="guided-panel guided-panel--map-scrim" id="guided-panel-map-scrim" aria-hidden="true">
-      <button type="button" id="btn-explore-freely-overlay" class="btn btn-explore-freely-escape">
-        Explore Freely
-      </button>
+    <div class="guided-panel guided-panel--map-scrim" id="guided-panel-map-scrim">
+      <div class="guided-map-preview-spacer" aria-hidden="true"></div>
+      <aside class="guided-alt-explore" aria-label="Browse without guidance">
+        <p class="guided-alt-explore-copy">
+          Prefer to browse all capabilities?<br>
+          Explore the full capability map instead.
+        </p>
+        <button type="button" id="btn-explore-freely-overlay" class="btn btn-guided-explore-secondary">
+          Explore Freely
+        </button>
+      </aside>
     </div>
     <div class="guided-panel guided-panel--recommendations" id="guided-panel-recommendations" aria-labelledby="guided-recommendations-heading">
       <h2 class="guided-recommendations-heading" id="guided-recommendations-heading">
-        We recommend exploring these aiRMF capabilities
+        Recommended capabilities
       </h2>
       <div id="guided-recommendations-host" class="guided-recommendation-cards" role="list"></div>
-      <button type="button" id="btn-explore-freely-guided" class="btn-explore-freely-guided">
-        Explore Freely
-      </button>
+      <aside class="guided-alt-explore guided-alt-explore--compact" aria-label="Browse without guidance">
+        <p class="guided-alt-explore-copy">
+          Prefer to browse all capabilities?<br>
+          Explore the full capability map instead.
+        </p>
+        <button type="button" id="btn-explore-freely-guided" class="btn btn-guided-explore-secondary">
+          Explore Freely
+        </button>
+      </aside>
     </div>
   </div>
 
-  <!-- Persistent prototype disclaimer: fixed top-right across every view. -->
+  <!-- Persistent prototype disclaimer: top-right inside the app-stage. -->
   <p class="spike-disclaimer" role="note">Technical feasibility spike — not production software.</p>
 
   <!-- Toast: transient confirmation for selection / clear actions. -->
   <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+    </div>
+    </div>
+  </div>
 
   <!-- qrcodejs 1.0.0 inlined for offline / file:// (MIT, davidshimjs/qrcodejs). -->
   <script>
@@ -3383,7 +3988,15 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
 
       var art = document.createElement("div");
       art.className = "modal-overview-art";
-      art.setAttribute("aria-hidden", "true");
+      if (cap.overviewImage) {
+        var artImg = document.createElement("img");
+        artImg.src = cap.overviewImage;
+        artImg.alt = "";
+        artImg.setAttribute("aria-hidden", "true");
+        art.appendChild(artImg);
+      } else {
+        art.setAttribute("aria-hidden", "true");
+      }
 
       var main = document.createElement("div");
       main.className = "modal-overview-main";
@@ -3403,6 +4016,12 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
       }
 
       var bullets = cap.overviewBullets || [];
+      if (cap.overviewBulletsHeading) {
+        var bulletsHeading = document.createElement("p");
+        bulletsHeading.className = "modal-overview-bullets-heading";
+        bulletsHeading.textContent = cap.overviewBulletsHeading;
+        main.appendChild(bulletsHeading);
+      }
       if (bullets.length > 0) {
         var ul = document.createElement("ul");
         ul.className = "modal-overview-bullets";
@@ -3414,16 +4033,23 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
         main.appendChild(ul);
       }
 
+      if (cap.overviewClosing) {
+        var closing = document.createElement("p");
+        closing.className = "modal-overview-closing";
+        closing.textContent = cap.overviewClosing;
+        main.appendChild(closing);
+      }
+
       var caseStudy = document.createElement("button");
       caseStudy.type = "button";
       caseStudy.className = "modal-case-study-cta";
       caseStudy.textContent = "Explore Case Study ›";
       caseStudy.disabled = true;
       caseStudy.setAttribute("aria-label", "Explore case study (coming soon)");
+      main.appendChild(caseStudy);
 
       overview.appendChild(art);
       overview.appendChild(main);
-      overview.appendChild(caseStudy);
       container.appendChild(overview);
     }
 
@@ -3439,10 +4065,10 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
         var area = workAreas[i];
         var tab = document.createElement("button");
         tab.type = "button";
-        tab.className = "modal-work-tab" + (area.id === activeId ? " is-active" : "");
+        tab.className = "modal-work-tab" + (activeId && area.id === activeId ? " is-active" : "");
         tab.dataset.workAreaId = area.id;
         tab.setAttribute("role", "tab");
-        tab.setAttribute("aria-selected", area.id === activeId ? "true" : "false");
+        tab.setAttribute("aria-selected", activeId && area.id === activeId ? "true" : "false");
         tab.setAttribute("aria-controls", "modal-work-detail-panel");
         tab.id = "work-area-tab-" + area.id;
 
@@ -3512,10 +4138,85 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
       container.appendChild(panel);
     }
 
+    var MODAL_VIEW_MS = 400;
+
+    function prefersReducedMotion() {
+      return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    }
+
+    function getModalViewDuration() {
+      return prefersReducedMotion() ? 0 : MODAL_VIEW_MS;
+    }
+
+    function smoothScrollModalBody(targetTop, duration) {
+      var body = document.getElementById("modal-body");
+      if (!body) return;
+      if (!duration) {
+        body.scrollTop = targetTop;
+        return;
+      }
+      var startTop = body.scrollTop;
+      var delta = targetTop - startTop;
+      if (Math.abs(delta) < 1) return;
+      var startTime = null;
+      function step(timestamp) {
+        if (!startTime) startTime = timestamp;
+        var elapsed = timestamp - startTime;
+        var progress = Math.min(elapsed / duration, 1);
+        var eased = progress < 0.5
+          ? 2 * progress * progress
+          : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+        body.scrollTop = startTop + delta * eased;
+        if (progress < 1) requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    }
+
+    function setModalView(view) {
+      var content = document.getElementById("modal-content");
+      var backBtn = document.getElementById("modal-back-overview");
+      if (!content) return;
+      var isWorkArea = view === "work-area";
+      content.setAttribute("data-modal-view", isWorkArea ? "work-area" : "overview");
+      if (backBtn) {
+        backBtn.setAttribute("aria-hidden", isWorkArea ? "false" : "true");
+        backBtn.tabIndex = isWorkArea ? 0 : -1;
+      }
+    }
+
+    function showModalOverview() {
+      var cap = capabilityById(currentModalCapabilityId);
+      if (!cap) return;
+      currentModalWorkAreaId = null;
+      var tabsHost = document.getElementById("modal-work-tabs-host");
+      var detailsHost = document.getElementById("modal-work-details-host");
+      var workAreas = getCapabilityWorkAreas(cap);
+      var duration = getModalViewDuration();
+
+      if (tabsHost) {
+        var tabs = tabsHost.querySelectorAll(".modal-work-tab");
+        for (var i = 0; i < tabs.length; i++) {
+          tabs[i].classList.remove("is-active");
+          tabs[i].setAttribute("aria-selected", "false");
+        }
+      }
+
+      setModalView("overview");
+      smoothScrollModalBody(0, duration);
+
+      window.setTimeout(function () {
+        if (currentModalWorkAreaId !== null) return;
+        if (detailsHost) detailsHost.innerHTML = "";
+        if (tabsHost) renderWorkAreaTabs(workAreas, null, tabsHost);
+      }, duration);
+    }
+
     function selectModalWorkArea(workAreaId) {
       var cap = capabilityById(currentModalCapabilityId);
       if (!cap) return;
 
+      var content = document.getElementById("modal-content");
+      var wasOverview = !content || content.getAttribute("data-modal-view") !== "work-area";
       currentModalWorkAreaId = workAreaId;
 
       var tabsHost = document.getElementById("modal-work-tabs-host");
@@ -3531,6 +4232,13 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
       var detailsHost = document.getElementById("modal-work-details-host");
       if (detailsHost) {
         renderSelectedWorkAreaDetail(cap, workAreaId, detailsHost);
+        void detailsHost.offsetHeight;
+      }
+
+      setModalView("work-area");
+
+      if (wasOverview) {
+        smoothScrollModalBody(0, getModalViewDuration());
       }
     }
 
@@ -3544,15 +4252,16 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
       markCapabilityViewed(capabilityId);
 
       var workAreas = getCapabilityWorkAreas(cap);
-      currentModalWorkAreaId = workAreas[0].id;
+      currentModalWorkAreaId = null;
 
       var overviewHost = document.getElementById("modal-overview-host");
       var tabsHost = document.getElementById("modal-work-tabs-host");
       var detailsHost = document.getElementById("modal-work-details-host");
 
       if (overviewHost) renderCapabilityOverview(cap, overviewHost);
-      if (tabsHost) renderWorkAreaTabs(workAreas, currentModalWorkAreaId, tabsHost);
-      if (detailsHost) renderSelectedWorkAreaDetail(cap, currentModalWorkAreaId, detailsHost);
+      if (tabsHost) renderWorkAreaTabs(workAreas, null, tabsHost);
+      if (detailsHost) detailsHost.innerHTML = "";
+      setModalView("overview");
 
       var recommendEl = document.getElementById("modal-recommend-context");
       var priorityEl = document.getElementById("modal-recommend-context-priority");
@@ -3693,6 +4402,8 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
       overlay.hidden = true;
       document.body.style.overflow = "";
       currentModalCapabilityId = null;
+      currentModalWorkAreaId = null;
+      setModalView("overview");
 
       // Return focus to the originating touch target (re-rendered on open).
       if (lastFocusedCapabilityId) {
@@ -3912,6 +4623,7 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
         btn.className = "explore-category-filter" + (active ? " is-active" : "");
         btn.dataset.category = cat.id;
         btn.setAttribute("aria-pressed", active ? "true" : "false");
+        btn.setAttribute("aria-label", cat.label + ". " + cat.filterDescription);
 
         var title = document.createElement("span");
         title.className = "explore-category-filter-title";
@@ -4046,14 +4758,17 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
         id: "ai-exploration",
         category: "development",
         title: "AI Exploration",
+        overviewImage: "assets/ai-exploration-overview.png",
         description: "Discover use cases, test ideas, and validate feasibility before larger investment.",
         overview: "Exploration turns curiosity into evidence. Teams experiment with prototypes, evaluate data fit, and learn what is worth building without committing to full production paths too early.",
-        overviewIntro: "AI Explorations help organizations build confidence before scaling investment in full production solutions.",
+        overviewIntro: "Organizations across the government are racing to adopt AI — the hard part is knowing where it pays off and proving it before you invest.",
+        overviewBulletsHeading: "AI Explorations helps organizations:",
         overviewBullets: [
-          "Identify where AI can create measurable value",
-          "Validate feasibility with targeted experiments",
-          "Build executive alignment around evidence-based priorities"
+          "Identify high-value use cases aligned to business or mission outcomes",
+          "Define requirements and target the right solutions",
+          "Move quickly from concept to working prototype"
         ],
+        overviewClosing: "This capability accelerates early-stage AI exploration — helping you find where AI can deliver meaningful value and prove it fast through hands-on prototyping.",
         keyWorkAreas: [
           "Use-case discovery and prioritization",
           "Proof-of-concept and pilot design",
@@ -4243,11 +4958,9 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
       selectedCategoryFilter = null;
       guidedExperienceStep = "question";
       viewedCapabilities = {};
-      // Tear down transient UI: any armed clear-confirm, any armed
-      // exit-confirm, an open modal, and any queued toast messages from
-      // the previous visitor.
+      // Tear down transient UI: any armed clear-confirm, an open modal,
+      // and any queued toast messages from the previous visitor.
       resetClearArmState();
-      resetExitArmState();
       closeCapabilityPreview();
       closeCapabilityModal();
       hideGuidedExperienceOverlay();
@@ -4259,51 +4972,6 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
       renderExploreView();
       refreshStatelessParameterPreview();
       refreshFocusQrDisplay();
-    }
-
-    /* -------------------------------------------------------------------------- */
-    /* Exit Experience two-tap confirm                                            */
-    /* Mirrors the Clear-selections pattern: first tap arms the button, second   */
-    /* tap within EXIT_ARM_MS triggers the exit. Reuses the existing             */
-    /* .btn-clear.is-armed styling so no new vocabulary is introduced.           */
-    /* -------------------------------------------------------------------------- */
-
-    var EXIT_ARM_MS = 3000;
-    var exitArmed = false;
-    var exitArmTimer = null;
-    var exitArmedButtonId = null;
-
-    function resetExitArmState() {
-      exitArmed = false;
-      if (exitArmTimer) {
-        clearTimeout(exitArmTimer);
-        exitArmTimer = null;
-      }
-      if (exitArmedButtonId) {
-        var btn = document.getElementById(exitArmedButtonId);
-        if (btn) {
-          btn.textContent = "Exit Experience";
-          btn.classList.remove("is-armed");
-        }
-        exitArmedButtonId = null;
-      }
-    }
-
-    /** Click handler for the Focus Map Exit Experience button.
-     *  First tap arms the button; second tap calls handleExitExperience(). */
-    function handleExitButtonClick(event) {
-      var btn = event && event.currentTarget;
-      if (!exitArmed) {
-        exitArmed = true;
-        if (btn) {
-          exitArmedButtonId = btn.id;
-          btn.textContent = "Tap again to exit";
-          btn.classList.add("is-armed");
-        }
-        exitArmTimer = setTimeout(resetExitArmState, EXIT_ARM_MS);
-        return;
-      }
-      handleExitExperience();
     }
 
     /* -------------------------------------------------------------------------- */
@@ -4353,13 +5021,10 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
      * Supported viewName values: "home" | "airmf" | "explore" | "focus".
      *
      * Side effects:
-     *  - Defuses any armed Exit confirmation so it doesn't survive a context
-     *    switch and accidentally exit on a single tap later.
      *  - Arms/disarms the idle auto-reset timer so it only runs inside the
      *    aiRMF experience, not on the Touchscreen Entry Page.
      */
     function showView(viewName) {
-      resetExitArmState();
       var views = {
         home: document.getElementById("view-home"),
         airmf: document.getElementById("view-airmf-intro"),
@@ -4456,7 +5121,7 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
         card.type = "button";
         card.className = "guided-recommendation-card";
         card.setAttribute("role", "listitem");
-        card.setAttribute("aria-label", cap.title + ". Learn more.");
+        card.setAttribute("aria-label", cap.title + ". Explore capability.");
 
         var art = document.createElement("div");
         art.className = "guided-recommendation-art";
@@ -4479,7 +5144,7 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
         var learn = document.createElement("span");
         learn.className = "btn btn-primary";
         learn.setAttribute("aria-hidden", "true");
-        learn.textContent = "Learn More";
+        learn.textContent = "Explore Capability";
         body.appendChild(learn);
 
         card.addEventListener("click", function (capId) {
@@ -4497,50 +5162,92 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
      */
     const SHOW_HOTSPOT_DEBUG = false;
 
-    /**
-     * Hotspot centers (% of wheel artboard) aligned to icon positions in
-     * assets/airmf-wheel.png. Eight wheel icons only — AI Exploration has no
-     * on-wheel hotspot. Recalibrate if the artwork changes.
-     */
-    var WHEEL_LAYOUT_SLOTS = {
-      "trusted-secure-ai":           { left: 50.0, top: 6.2 },
-      "data-readiness":              { left: 66.2, top: 10.8 },
-      "ai-delivery-operations":      { left: 83.5, top: 26.5 },
-      "ai-users-adoption":           { left: 73.0, top: 53.0 },
-      "ai-infrastructure-platforms": { left: 51.0, top: 80.5 },
-      "ai-agents-development":       { left: 26.5, top: 75.5 },
-      "ai-enabled-workforce":        { left: 13.5, top: 49.5 },
-      "ai-strategy-governance":      { left: 22.5, top: 15.5 }
+    /* ==========================================================================
+       WHEEL POSITION TUNING
+       --------------------------------------------------------------------------
+       Adjust overall wheel size:     WHEEL_POSITION_TUNING.stageSize
+       Adjust overall wheel x/y:      WHEEL_POSITION_TUNING.offsetX / offsetY
+       Adjust polar coordinate scale: WHEEL_POSITION_TUNING.coordSize, centerX,
+                                      centerY, radiusScale
+       Adjust individual icons:       WHEEL_ITEMS[].angle, radius, labelPosition
+       Adjust icon button size:       WHEEL_POSITION_TUNING.iconSize
+       Adjust label gap from icon:    WHEEL_POSITION_TUNING.labelGap
+       Adjust compass scale in stage: WHEEL_POSITION_TUNING.compassScale
+       ========================================================================== */
+
+    var WHEEL_POSITION_TUNING = {
+      stageSize: "80cqh",
+      offsetX: "0%",
+      offsetY: "0%",
+      coordSize: 1220,
+      centerX: 610,
+      centerY: 610,
+      radiusScale: 0.80,
+      iconSize: 10,
+      labelGap: "0.35rem",
+      compassScale: 0.725
     };
 
-    function wheelLabelOffset(pos) {
-      var dx = pos.left - 50;
-      var dy = pos.top - 50;
-      var len = Math.sqrt(dx * dx + dy * dy) || 1;
-      var outward = 3.2;
+    /**
+     * Wheel items — one row per on-wheel capability.
+     * angle: degrees, 0 = right, -90 = top, 90 = bottom (standard math coords).
+     * radius: distance from wheel center in tuning coordinate units.
+     * labelPosition: "top" | "right" | "bottom" | "left"
+     */
+    var WHEEL_ITEMS = [
+      { capabilityId: "trusted-secure-ai",           icon: "assets/wheel/icon-validate.svg",   angle: -90,  radius: 620, labelPosition: "top" },
+      { capabilityId: "data-readiness",              icon: "assets/wheel/icon-map.svg",        angle: 230,  radius: 620, labelPosition: "top" },
+      { capabilityId: "ai-delivery-operations",      icon: "assets/wheel/icon-launch.svg",     angle: -10,  radius: 620, labelPosition: "right" },
+      { capabilityId: "ai-users-adoption",           icon: "assets/wheel/icon-discover.svg",   angle: 110,   radius: 620, labelPosition: "bottom" },
+      { capabilityId: "ai-infrastructure-platforms", icon: "assets/wheel/icon-build.svg",      angle: 70,   radius: 620, labelPosition: "bottom" },
+      { capabilityId: "ai-agents-development",       icon: "assets/wheel/icon-design.svg",     angle: 30,  radius: 620, labelPosition: "bottom" },
+      { capabilityId: "ai-enabled-workforce",        icon: "assets/wheel/icon-measure.svg",    angle: 150,  radius: 620, labelPosition: "left" },
+      { capabilityId: "ai-strategy-governance",      icon: "assets/wheel/icon-prioritize.svg", angle: 190,  radius: 620, labelPosition: "left" },
+      { capabilityId: "ai-exploration",              icon: "assets/wheel/icon-explore.svg",    angle: -50,  radius: 610, labelPosition: "right" }
+    ];
+
+    function applyWheelStageTuning() {
+      var stage = document.getElementById("wheel-stage");
+      if (!stage) return;
+      var t = WHEEL_POSITION_TUNING;
+      stage.style.setProperty("--wheel-stage-size", t.stageSize);
+      stage.style.setProperty("--wheel-offset-x", t.offsetX);
+      stage.style.setProperty("--wheel-offset-y", t.offsetY);
+      stage.style.setProperty("--wheel-label-gap", t.labelGap);
+      stage.style.setProperty("--wheel-compass-scale", String(t.compassScale));
+    }
+
+    function wheelPolarToPercent(angle, radius) {
+      var t = WHEEL_POSITION_TUNING;
+      var scaledRadius = radius * (t.radiusScale != null ? t.radiusScale : 1);
+      var rad = (angle * Math.PI) / 180;
+      var x = t.centerX + scaledRadius * Math.cos(rad);
+      var y = t.centerY + scaledRadius * Math.sin(rad);
       return {
-        ox: ((dx / len) * outward).toFixed(2) + "vmin",
-        oy: ((dy / len) * outward).toFixed(2) + "vmin"
+        left: (x / t.coordSize) * 100,
+        top: (y / t.coordSize) * 100
       };
     }
 
-    function wheelTargetPosition(capabilityId) {
-      var slot = WHEEL_LAYOUT_SLOTS[capabilityId];
-      return slot ? slot : { left: 50, top: 50 };
+    function getWheelItem(capabilityId) {
+      for (var i = 0; i < WHEEL_ITEMS.length; i++) {
+        if (WHEEL_ITEMS[i].capabilityId === capabilityId) return WHEEL_ITEMS[i];
+      }
+      return null;
     }
 
     /**
-     * Build a hotspot overlay on the wheel image. Tap opens preview.
+     * Build an icon hotspot on the wheel compass. Tap opens the capability modal.
      * Starring is only available from the capability detail modal.
      */
-    function buildWheelTarget(cap) {
+    function buildWheelTarget(cap, item) {
       var selected = isSelected(cap.id);
       var recommended = isCapabilityRecommended(cap.id);
       var viewed = isCapabilityViewed(cap.id);
       var emphasized = isWheelTargetEmphasized(cap);
       var dimmed = isWheelTargetDimmed(cap);
-      var pos = wheelTargetPosition(cap.id);
-      var labelOff = wheelLabelOffset(pos);
+      var pos = wheelPolarToPercent(item.angle, item.radius);
+      var iconSize = item.size != null ? item.size : WHEEL_POSITION_TUNING.iconSize;
 
       var target = document.createElement("div");
       target.className =
@@ -4552,20 +5259,23 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
         (dimmed ? " is-dimmed" : "");
       target.dataset.capabilityId = cap.id;
       target.dataset.domain = cap.category;
+      target.dataset.labelPosition = item.labelPosition || "top";
       target.style.left = pos.left + "%";
       target.style.top = pos.top + "%";
-      target.style.setProperty("--label-ox", labelOff.ox);
-      target.style.setProperty("--label-oy", labelOff.oy);
+      target.style.width = iconSize + "%";
 
       var hit = document.createElement("button");
       hit.type = "button";
       hit.className = "wheel-target-hit";
       hit.setAttribute("aria-label", cap.title + ". Open capability details.");
 
-      var dot = document.createElement("span");
-      dot.className = "wheel-target-dot";
-      dot.setAttribute("aria-hidden", "true");
-      hit.appendChild(dot);
+      var icon = document.createElement("img");
+      icon.className = "wheel-target-icon";
+      icon.src = item.icon;
+      icon.alt = "";
+      icon.setAttribute("aria-hidden", "true");
+      icon.decoding = "async";
+      hit.appendChild(icon);
 
       var star = document.createElement("span");
       star.className = "wheel-target-star";
@@ -4609,12 +5319,15 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
         }
       }
       renderCategoryFilters();
+      applyWheelStageTuning();
       var host = document.getElementById("explore-card-host");
       host.innerHTML = "";
       host.className = "wheel-targets" + (SHOW_HOTSPOT_DEBUG ? " is-debug" : "");
-      for (var i = 0; i < CAPABILITIES.length; i++) {
-        if (!WHEEL_LAYOUT_SLOTS[CAPABILITIES[i].id]) continue;
-        host.appendChild(buildWheelTarget(CAPABILITIES[i]));
+      for (var i = 0; i < WHEEL_ITEMS.length; i++) {
+        var item = WHEEL_ITEMS[i];
+        var cap = capabilityById(item.capabilityId);
+        if (!cap) continue;
+        host.appendChild(buildWheelTarget(cap, item));
       }
     }
 
@@ -4709,11 +5422,6 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
       showView("explore");
     });
 
-    // "Exit Experience" on the Focus Map: two-tap confirm to prevent accidental
-    // loss of selections. Second tap (within EXIT_ARM_MS) ends the aiRMF runtime,
-    // resets all in-memory state, then returns to entry.
-    document.getElementById("btn-focus-home").addEventListener("click", handleExitButtonClick);
-
     // Activity-driven idle reset: any tap or key press anywhere on the
     // document re-arms the inactivity countdown while inside aiRMF.
     document.addEventListener("pointerdown", handleIdleActivity, { passive: true });
@@ -4738,6 +5446,7 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
     // Capability modal: close button, in-modal select/deselect, prev/next
     // pager, click-outside, Tab focus trap, and Escape (only when open).
     document.getElementById("modal-close-btn").addEventListener("click", closeCapabilityModal);
+    document.getElementById("modal-back-overview").addEventListener("click", showModalOverview);
     document.getElementById("modal-toggle-btn").addEventListener("click", handleModalToggleClick);
     document.getElementById("modal-prev-btn").addEventListener("click", function () { navigateModal(-1); });
     document.getElementById("modal-next-btn").addEventListener("click", function () { navigateModal(1); });

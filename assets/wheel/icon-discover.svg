@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
+  <title id="title">Discover icon placeholder</title>
+  <desc id="desc">Magnifying glass placeholder icon.</desc>
+  <circle cx="55" cy="55" r="30" fill="none" stroke="currentColor" stroke-width="10"/>
+  <line x1="77" y1="77" x2="108" y2="108" stroke="currentColor" stroke-width="10" stroke-linecap="round"/>
+</svg>
