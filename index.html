@@ -4928,7 +4928,7 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
      * visitor's eye is (star button fills, card border highlights, hint
      * flips, footer count updates, View AI Focus Map enables). The toast
      * queue is reserved for actions without that built-in feedback —
-     * Clear confirmation, idle warning, and copy-failure messages.
+     * Clear confirmation and copy-failure messages.
      */
     function toggleSelection(capabilityId) {
       var idx = selectedCapabilities.indexOf(capabilityId);
@@ -4946,83 +4946,8 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
     }
 
     /**
-     * Exit the aiRMF experience and return to the Touchscreen Entry Page.
-     * The entry page represents the Intuiface launcher, so leaving the
-     * experience is treated as ending it: every in-memory selection,
-     * viewed flag, focus-area answer, and rendered surface is reset so
-     * the next visitor starts fresh.
-     */
-    function resetExperienceState() {
-      selectedCapabilities = [];
-      selectedQuestionResponse = null;
-      selectedCategoryFilter = null;
-      guidedExperienceStep = "question";
-      viewedCapabilities = {};
-      // Tear down transient UI: any armed clear-confirm, an open modal,
-      // and any queued toast messages from the previous visitor.
-      resetClearArmState();
-      closeCapabilityPreview();
-      closeCapabilityModal();
-      hideGuidedExperienceOverlay();
-      toastQueue.length = 0;
-      // Re-render dependent surfaces so hidden DOM is also coherent on
-      // re-entry (cards unstarred, recommend note hidden, QR back to base URL).
-      renderGuidedExperience();
-      renderGuidedRecommendations();
-      renderExploreView();
-      refreshStatelessParameterPreview();
-      refreshFocusQrDisplay();
-    }
-
-    /* -------------------------------------------------------------------------- */
-    /* Idle auto-reset                                                            */
-    /* Critical for an unattended kiosk: if the visitor walks away, return to     */
-    /* the Touchscreen Entry Page after IDLE_MS so the next person never inherits */
-    /* a previous session's selections or an open modal. Activity (pointerdown,   */
-    /* keydown) anywhere on the document re-arms the timer. Only runs while       */
-    /* inside the aiRMF experience — armed/disarmed by showView().                */
-    /* -------------------------------------------------------------------------- */
-
-    var IDLE_MS = 120000;
-    var IDLE_WARN_LEAD_MS = 12000; // toast appears this long before exit
-    var idleTimer = null;
-    var idleWarnTimer = null;
-    var idleArmed = false;
-
-    function disarmIdleTimer() {
-      if (idleTimer) { clearTimeout(idleTimer); idleTimer = null; }
-      if (idleWarnTimer) { clearTimeout(idleWarnTimer); idleWarnTimer = null; }
-      idleArmed = false;
-    }
-
-    function armIdleTimer() {
-      disarmIdleTimer();
-      idleArmed = true;
-      idleWarnTimer = setTimeout(function () {
-        showToast("Returning to start menu in 12 seconds — tap to stay.");
-      }, IDLE_MS - IDLE_WARN_LEAD_MS);
-      idleTimer = setTimeout(handleExitExperience, IDLE_MS);
-    }
-
-    /** Reset the idle countdown on any user activity, but only while the
-     *  visitor is inside aiRMF (idleArmed). Listening on the document means
-     *  taps on cards, the modal, sticky footer, etc. all count. */
-    function handleIdleActivity() {
-      if (idleArmed) armIdleTimer();
-    }
-
-    function handleExitExperience() {
-      resetExperienceState();
-      showView("home");
-    }
-
-    /**
      * Show one main panel; all others hidden. No router, no history API.
      * Supported viewName values: "home" | "airmf" | "explore" | "focus".
-     *
-     * Side effects:
-     *  - Arms/disarms the idle auto-reset timer so it only runs inside the
-     *    aiRMF experience, not on the Touchscreen Entry Page.
      */
     function showView(viewName) {
       var views = {
@@ -5041,10 +4966,6 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
       // Re-render the destination so its content reflects the latest state.
       if (viewName === "explore") renderExploreView();
       else if (viewName === "focus") renderFocusMapView();
-      // Idle reset only matters inside the aiRMF experience; the entry page
-      // is the launcher itself, so there's nothing to time out to.
-      if (viewName === "home") disarmIdleTimer();
-      else armIdleTimer();
     }
 
     /**
@@ -5421,11 +5342,6 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
     document.getElementById("btn-back-explore").addEventListener("click", function () {
       showView("explore");
     });
-
-    // Activity-driven idle reset: any tap or key press anywhere on the
-    // document re-arms the inactivity countdown while inside aiRMF.
-    document.addEventListener("pointerdown", handleIdleActivity, { passive: true });
-    document.addEventListener("keydown", handleIdleActivity);
 
     document.getElementById("btn-copy-url").addEventListener("click", copyStatelessUrlToClipboard);
 
