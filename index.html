@@ -98,12 +98,11 @@
     .preview-title,
     .wheel-target-label,
     .experience-card-title,
-    .focus-section-heading,
     .intro-section-heading,
     .intro-support-heading,
     .intro-actions-label,
     .guided-entry-heading,
-    .focus-item h3,
+    .focus-contact-card-title,
     .intro-path-card-text strong,
     .empty-state strong {
       font-family: var(--font-serif);
@@ -1649,7 +1648,7 @@
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
     }
 
-    /* Viewed — secondary ring + checkmark badge */
+    /* Viewed — secondary ring + eye badge */
     .wheel-target.is-viewed .wheel-target-hit {
       box-shadow:
         0 0 0 2px rgba(148, 163, 184, 0.6),
@@ -1664,20 +1663,18 @@
     }
 
     .wheel-target.is-viewed .wheel-target-hit::after {
-      content: "✓";
+      content: "";
       position: absolute;
       right: -0.12rem;
       bottom: -0.12rem;
-      width: 1.05rem;
-      height: 1.05rem;
+      width: 1.15rem;
+      height: 1.15rem;
       border-radius: 50%;
-      background: #334155;
-      color: #e2e8f0;
-      font-family: var(--font-sans);
-      font-size: 0.56rem;
-      font-weight: 700;
-      line-height: 1.05rem;
-      text-align: center;
+      background-color: #334155;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23e2e8f0' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z'/%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: 68%;
       border: 2px solid #1a2332;
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
       pointer-events: none;
@@ -1742,109 +1739,323 @@
       border: none;
     }
 
-    /* AI Focus Map: 3-column body — starred capabilities, contact
-       placeholder, and the QR takeaway sit side-by-side so the whole
-       synthesis surface fits one kiosk screen. */
+    /* AI Focus Map: light two-column body — QR or wheel left, contact cards
+       right. Fits one kiosk screen; card area scrolls only when 7+ selections. */
+    #view-focus {
+      overflow: hidden;
+      background: var(--airmf-surface-light);
+      color: var(--airmf-navy);
+      --focus-pad-inline: clamp(1.5rem, 2.8cqw, 2.5rem);
+    }
+
+    #view-focus.is-active {
+      overflow: hidden;
+    }
+
+    #view-focus .app-header {
+      background: var(--airmf-surface-light);
+      border-bottom: 1px solid #d1d5db;
+      padding: clamp(1rem, 1.8cqh, 1.35rem) var(--focus-pad-inline) clamp(0.75rem, 1.2cqh, 1rem);
+      align-items: flex-start;
+    }
+
+    #view-focus .app-header h1 {
+      color: var(--airmf-navy);
+      font-size: clamp(1.65rem, 2.8cqh, 2.15rem);
+      line-height: 1.12;
+      letter-spacing: -0.02em;
+    }
+
+    #view-focus .page-subtitle {
+      color: #64748b;
+      font-size: clamp(0.88rem, 1.35cqh, 1rem);
+      line-height: 1.45;
+      max-width: 54rem;
+    }
+
+    #view-focus .view-body {
+      overflow: hidden;
+      padding: clamp(0.75rem, 1.4cqh, 1.1rem) var(--focus-pad-inline) clamp(0.5rem, 0.9cqh, 0.75rem);
+      flex: 1 1 0;
+      min-height: 0;
+      gap: 0.55rem;
+    }
+
+    #view-focus .view-footer {
+      background: var(--airmf-surface-light);
+      border-top: 1px solid #d1d5db;
+      padding: 0.65rem var(--focus-pad-inline) 0.85rem;
+    }
+
+    #view-focus .btn-ghost {
+      background: var(--airmf-panel);
+      color: var(--airmf-navy);
+      border: 1px solid #cbd5e1;
+    }
+
     .focus-body {
-      gap: 1rem;
-    }
-
-    .focus-page-lede {
-      margin: 0;
-      color: #cbd5e1;
-      font-size: 0.95rem;
-      line-height: 1.4;
-    }
-
-    .focus-page-lede[hidden] {
-      display: none;
+      gap: 0;
+      flex: 1 1 0;
+      min-height: 0;
     }
 
     .focus-columns {
-      flex: 1 1 auto;
+      flex: 1 1 0;
       min-height: 0;
       display: grid;
-      gap: 1.4rem;
-      grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.95fr) minmax(0, 0.9fr);
+      gap: 0;
+      grid-template-columns: minmax(0, 0.88fr) minmax(0, 2.12fr);
       align-items: stretch;
     }
 
     .focus-col {
       display: flex;
       flex-direction: column;
-      gap: 0.7rem;
-      padding: 1.25rem 1.3rem 1.3rem;
-      background: #16202d;
-      border: 1px solid #2a3441;
-      border-radius: 0.85rem;
       min-height: 0;
       overflow: hidden;
     }
 
-    .focus-col-content {
-      overflow: hidden;
+    .focus-col-visual {
+      padding-right: clamp(1rem, 2cqw, 1.75rem);
+      margin-right: clamp(1rem, 2cqw, 1.75rem);
+      border-right: 1px solid #d1d5db;
     }
 
-    .focus-col-content #focus-content-host {
-      flex: 1 1 auto;
-      min-height: 0;
-      overflow: auto;
+    .focus-col-cards {
+      min-width: 0;
+    }
+
+    .focus-visual-panel {
+      flex: 1 1 0;
       display: flex;
       flex-direction: column;
-      gap: 0.7rem;
+      align-items: center;
+      justify-content: center;
+      gap: clamp(0.65rem, 1.2cqh, 0.95rem);
+      min-height: 0;
+      width: 100%;
+      padding: 0.25rem 0;
     }
 
-    .focus-col-takeaway {
-      align-items: flex-start;
+    .focus-visual-panel[hidden] {
+      display: none;
     }
 
-    @media (max-width: 1100px) {
-      .focus-columns {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    .focus-section-heading {
+    .focus-visual-lede {
       margin: 0;
-      font-size: 1.15rem;
-      font-weight: 650;
-      letter-spacing: -0.01em;
-      color: #f1f5f9;
-    }
-
-    .focus-section-lede {
-      margin: 0;
-      color: #94a3b8;
-      font-size: 0.88rem;
+      max-width: 16rem;
+      text-align: center;
+      color: #64748b;
+      font-size: clamp(0.82rem, 1.2cqh, 0.92rem);
       line-height: 1.4;
     }
 
-    .focus-list {
-      list-style: none;
-      margin: 0;
-      padding: 0;
+    .focus-wheel-image {
+      display: block;
+      width: min(100%, 26cqw);
+      max-height: min(68cqh, 100%);
+      height: auto;
+      object-fit: contain;
+      user-select: none;
+      pointer-events: none;
+    }
+
+    .focus-qr-mount {
+      display: block;
+      width: min(100%, 22cqw);
+      max-width: 100%;
+      padding: clamp(0.55rem, 1cqh, 0.75rem);
+      background: #fff;
+      border-radius: 0.65rem;
+      line-height: 0;
+      box-shadow: 0 1px 4px rgba(15, 39, 68, 0.08);
+    }
+
+    .focus-qr-mount img,
+    .focus-qr-mount canvas {
+      display: block;
+      width: 100% !important;
+      height: auto !important;
+    }
+
+    .focus-cards-scroll {
+      flex: 1 1 0;
+      min-height: 0;
+      overflow: hidden;
       display: flex;
       flex-direction: column;
+    }
+
+    .focus-cards-scroll.is-scrollable {
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      padding-right: 0.25rem;
+    }
+
+    .focus-cards-grid {
+      display: grid;
+      gap: clamp(0.65rem, 1.1cqh, 0.9rem);
+      width: 100%;
+      align-content: start;
+    }
+
+    .focus-contact-card {
+      display: flex;
+      flex-direction: column;
+      min-height: clamp(9.5rem, 16cqh, 11.5rem);
+      padding: clamp(0.75rem, 1.2cqh, 0.95rem) clamp(0.85rem, 1.3cqw, 1rem);
+      background: var(--airmf-panel);
+      border: 2px solid #cbd5e1;
+      border-radius: 0.55rem;
+      box-shadow: 0 1px 3px rgba(15, 39, 68, 0.06);
+    }
+
+    .focus-contact-card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
       gap: 0.65rem;
+      margin-bottom: clamp(0.55rem, 1cqh, 0.75rem);
+      padding-bottom: clamp(0.45rem, 0.85cqh, 0.6rem);
+      border-bottom: 1px solid #e2e8f0;
     }
 
-    .focus-item {
-      padding: 0.85rem 1rem;
-      background: #1a2332;
-      border-radius: 0.7rem;
-      border: 1px solid #2a3441;
-    }
-
-    .focus-item h3 {
-      margin: 0 0 0.25rem;
-      font-size: 1rem;
-    }
-
-    .focus-item p {
+    .focus-contact-card-title {
       margin: 0;
-      color: #94a3b8;
-      font-size: 0.85rem;
+      font-size: clamp(0.95rem, 1.45cqh, 1.08rem);
+      font-weight: 700;
+      line-height: 1.25;
+      color: var(--airmf-navy);
+      letter-spacing: -0.01em;
+    }
+
+    .focus-contact-card-icon {
+      flex-shrink: 0;
+      width: clamp(2rem, 3.2cqh, 2.35rem);
+      height: clamp(2rem, 3.2cqh, 2.35rem);
+      border-radius: 0.35rem;
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+    }
+
+    .focus-contact-card-body {
+      display: flex;
+      align-items: flex-start;
+      gap: clamp(0.55rem, 1cqw, 0.75rem);
+      margin-top: auto;
+    }
+
+    .focus-contact-card-avatar {
+      flex-shrink: 0;
+      width: clamp(2.35rem, 3.8cqh, 2.75rem);
+      height: clamp(2.35rem, 3.8cqh, 2.75rem);
+      border-radius: 50%;
+      background: #e2e8f0;
+    }
+
+    .focus-contact-card-details {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+      min-width: 0;
+    }
+
+    .focus-contact-card-role {
+      display: inline-block;
+      align-self: flex-start;
+      padding: 0.12rem 0.45rem;
+      font-size: clamp(0.62rem, 0.95cqh, 0.72rem);
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      border-radius: 0.2rem;
       line-height: 1.35;
+    }
+
+    .focus-contact-card-name {
+      margin: 0.15rem 0 0;
+      font-size: clamp(0.88rem, 1.25cqh, 0.95rem);
+      font-weight: 700;
+      color: var(--airmf-navy);
+      line-height: 1.3;
+    }
+
+    .focus-contact-card-email {
+      margin: 0;
+      font-size: clamp(0.78rem, 1.1cqh, 0.85rem);
+      line-height: 1.35;
+    }
+
+    .focus-contact-card[data-domain="foundations"] {
+      border-color: var(--airmf-foundations);
+    }
+
+    .focus-contact-card[data-domain="foundations"] .focus-contact-card-icon {
+      border-color: rgba(124, 179, 66, 0.35);
+      background: var(--airmf-foundations-soft);
+    }
+
+    .focus-contact-card[data-domain="foundations"] .focus-contact-card-role {
+      background: var(--airmf-foundations-soft);
+      color: #558b2f;
+    }
+
+    .focus-contact-card[data-domain="foundations"] .focus-contact-card-email {
+      color: #558b2f;
+    }
+
+    .focus-contact-card[data-domain="development"] {
+      border-color: var(--airmf-development);
+    }
+
+    .focus-contact-card[data-domain="development"] .focus-contact-card-icon {
+      border-color: rgba(38, 166, 154, 0.35);
+      background: var(--airmf-development-soft);
+    }
+
+    .focus-contact-card[data-domain="development"] .focus-contact-card-role {
+      background: var(--airmf-development-soft);
+      color: #00796b;
+    }
+
+    .focus-contact-card[data-domain="development"] .focus-contact-card-email {
+      color: #00796b;
+    }
+
+    .focus-contact-card[data-domain="adoption"] {
+      border-color: var(--airmf-adoption);
+    }
+
+    .focus-contact-card[data-domain="adoption"] .focus-contact-card-icon {
+      border-color: rgba(66, 165, 245, 0.35);
+      background: var(--airmf-adoption-soft);
+    }
+
+    .focus-contact-card[data-domain="adoption"] .focus-contact-card-role {
+      background: var(--airmf-adoption-soft);
+      color: #1565c0;
+    }
+
+    .focus-contact-card[data-domain="adoption"] .focus-contact-card-email {
+      color: #1565c0;
+    }
+
+    @container app-stage (max-width: 1100px) {
+      .focus-columns {
+        grid-template-columns: 1fr;
+      }
+
+      .focus-col-visual {
+        padding-right: 0;
+        margin-right: 0;
+        border-right: none;
+        border-bottom: 1px solid #d1d5db;
+        padding-bottom: 1rem;
+        margin-bottom: 1rem;
+      }
+
+      .focus-cards-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      }
     }
 
     .empty-state {
@@ -1862,6 +2073,16 @@
       color: #e8ecf1;
       font-size: 1.05rem;
       margin-bottom: 0.4rem;
+    }
+
+    #view-focus .empty-state {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+      color: #64748b;
+    }
+
+    #view-focus .empty-state strong {
+      color: var(--airmf-navy);
     }
 
     /* Kiosk session id chip — rendered inside the header as a tiny meta
@@ -1887,118 +2108,8 @@
       font-variant-numeric: tabular-nums;
     }
 
-    /* Takeaway column — QR + URL + copy action stacked. The .continue-later
-       wrapper no longer needs the top border/padding from the old vertical
-       stack layout; the column treatment supplies its own visual frame. */
-    .continue-later {
-      margin: 0;
-      padding: 0;
-      border: none;
-    }
-
-    .continue-later-lede {
-      margin: 0;
-      color: #94a3b8;
-      font-size: 0.88rem;
-      line-height: 1.4;
-    }
-
-    /* Contact Information: visual-only placeholder. The column treatment
-       (.focus-col) supplies the frame, so no extra top border/padding. */
-    .contact-section {
-      margin: 0;
-      padding: 0;
-      border: none;
-    }
-
-    .placeholder-note {
-      margin: 0;
-      font-size: 0.8rem;
-      color: #94a3b8;
-      font-style: italic;
-    }
-
-    .contact-form-placeholder {
-      display: flex;
-      flex-direction: column;
-      gap: 0.55rem;
-    }
-
-    .placeholder-field {
-      display: flex;
-      flex-direction: column;
-      gap: 0.25rem;
-      opacity: 0.7;
-    }
-
-    .placeholder-field-label {
-      font-size: 0.68rem;
-      font-weight: 700;
-      color: #94a3b8;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-    }
-
-    .placeholder-field input {
-      font-family: var(--font-sans);
-      font-size: 0.9rem;
-      padding: 0.55rem 0.7rem;
-      background: #131c29;
-      color: #94a3b8;
-      border: 1px dashed #334155;
-      border-radius: 0.5rem;
-      cursor: not-allowed;
-    }
-
-    .placeholder-field input::placeholder {
-      color: #475569;
-    }
-
-    .focus-qr-mount {
-      display: inline-block;
-      padding: 0.6rem;
-      background: #fff;
-      border-radius: 0.65rem;
-      line-height: 0;
-      align-self: flex-start;
-    }
-
-    .focus-qr-mount img {
-      display: block;
-      width: 224px;
-      height: 224px;
-    }
-
-    .qr-actions {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      flex-wrap: wrap;
-    }
-
-    .btn-copy {
-      min-height: 2.25rem;
-      padding: 0 0.85rem;
-      font-size: 0.85rem;
-    }
-
-    .btn-copy.is-success {
-      background: #052e1a;
-      border-color: #10b981;
-      color: #6ee7b7;
-    }
-
-    .qr-url-muted {
-      margin: 0.55rem 0 0;
-      font-size: 0.78rem;
-      color: #94a3b8;
-      word-break: break-all;
-      max-width: 100%;
-      font-variant-numeric: tabular-nums;
-    }
-
     /* Technical preview (Focus map): tiny inline disclosure beneath the
-       3-column body, collapsed by default so it never claims primary
+       two-column body, collapsed by default so it never claims primary
        visual real estate on the kiosk. */
     .handoff-dev {
       flex-shrink: 0;
@@ -2013,7 +2124,7 @@
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.1em;
-      color: #94a3b8;
+      color: #64748b;
       list-style: none;
       display: inline-flex;
       align-items: center;
@@ -2061,9 +2172,9 @@
       font-variant-numeric: tabular-nums;
       font-size: 0.7rem;
       line-height: 1.35;
-      color: #cbd5e1;
-      background: #0c1220;
-      border: 1px solid #334155;
+      color: #475569;
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
       border-radius: 0.55rem;
       white-space: pre-wrap;
       word-break: break-word;
@@ -3476,48 +3587,37 @@
     </footer>
   </div>
 
-  <!-- AI Focus Map: synthesis screen. 3-column body (starred capabilities |
-       contact placeholder | QR takeaway) fits one screen; navigation lives
-       in the bottom footer. -->
+  <!-- AI Focus Map: two-column body — QR or wheel left, contact cards right. -->
   <div id="view-focus" class="view" aria-hidden="true">
-    <header class="app-header">
-      <h1>AI Focus Map</h1>
+    <header class="app-header focus-header">
+      <div class="app-header-titles">
+        <h1>Your AI Capability Focus Map</h1>
+        <p class="page-subtitle focus-header-subtitle">
+          Interested in exploring how the capabilities you selected apply to your organization? Connect with our lead practitioners to continue the conversation.
+        </p>
+      </div>
       <span class="focus-session-panel header-meta" id="focus-session-display" role="status" aria-live="polite"></span>
     </header>
     <div class="view-body focus-body">
-      <p class="focus-page-lede" id="focus-page-lede" hidden>
-        Capabilities you selected to carry forward.
-      </p>
       <div class="focus-columns">
-        <section class="focus-col focus-col-content" aria-label="Starred capabilities">
-          <div id="focus-content-host"></div>
-        </section>
-        <section class="focus-col focus-col-contact contact-section" aria-labelledby="contact-heading">
-          <h2 class="focus-section-heading" id="contact-heading">Contact Information</h2>
-          <p class="placeholder-note">Placeholder — fields are disabled.</p>
-          <div class="contact-form-placeholder" aria-hidden="true">
-            <label class="placeholder-field">
-              <span class="placeholder-field-label">Name</span>
-              <input type="text" disabled placeholder="Visitor name" />
-            </label>
-            <label class="placeholder-field">
-              <span class="placeholder-field-label">Organization</span>
-              <input type="text" disabled placeholder="Company or team" />
-            </label>
-            <label class="placeholder-field">
-              <span class="placeholder-field-label">Email</span>
-              <input type="email" disabled placeholder="name@example.com" />
-            </label>
+        <section class="focus-col focus-col-visual" aria-label="Focus map visualization">
+          <div id="focus-qr-panel" class="focus-visual-panel" hidden>
+            <div id="focus-qr-mount" class="focus-qr-mount" role="img" aria-label="QR code for stateless focus URL"></div>
+            <p class="focus-visual-lede">Scan to continue this conversation outside the Grid Room kiosk.</p>
+          </div>
+          <div id="focus-wheel-panel" class="focus-visual-panel">
+            <img
+              src="assets/airmf-wheel.png"
+              alt="aiRMF capability wheel"
+              class="focus-wheel-image"
+              decoding="async"
+            />
           </div>
         </section>
-        <section class="focus-col focus-col-takeaway continue-later" id="focus-continue-section" aria-labelledby="continue-later-heading">
-          <h2 class="focus-section-heading" id="continue-later-heading">Takeaway</h2>
-          <p class="continue-later-lede">Scan to open this AI Focus Map outside the Grid Room.</p>
-          <div id="focus-qr-mount" class="focus-qr-mount" role="img" aria-label="QR code for stateless focus URL"></div>
-          <div class="qr-actions">
-            <button type="button" id="btn-copy-url" class="btn btn-ghost btn-copy" aria-live="polite">Copy URL</button>
+        <section class="focus-col focus-col-cards" aria-label="Lead practitioner contacts">
+          <div id="focus-cards-scroll" class="focus-cards-scroll">
+            <div id="focus-cards-host" class="focus-cards-grid" role="list"></div>
           </div>
-          <p id="focus-qr-url-text" class="qr-url-muted"></p>
         </section>
       </div>
       <details class="handoff-dev" id="focus-handoff-section">
@@ -3525,7 +3625,7 @@
         <pre id="focus-handoff-pre" class="handoff-pre" aria-label="Stateless URL parameter preview"></pre>
       </details>
     </div>
-    <footer class="view-footer" aria-label="AI Focus Map actions">
+    <footer class="view-footer focus-footer" aria-label="AI Focus Map actions">
       <button type="button" class="btn btn-ghost btn-large" id="btn-back-explore">
         Back to Capability Map
       </button>
@@ -3703,15 +3803,18 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
       });
     }
 
-    /** Syncs muted URL text + QR image to the current stateless focus URL. */
+    /** Syncs QR image to the current stateless focus URL and toggles QR vs wheel. */
     function refreshFocusQrDisplay() {
       var url = buildStatelessFocusUrl();
-      var urlEl = document.getElementById("focus-qr-url-text");
       var mountEl = document.getElementById("focus-qr-mount");
-      if (urlEl) {
-        urlEl.textContent = url;
-      }
-      if (mountEl) {
+      var qrPanel = document.getElementById("focus-qr-panel");
+      var wheelPanel = document.getElementById("focus-wheel-panel");
+      var hasQr = selectedCapabilities.length > 0;
+
+      if (qrPanel) qrPanel.hidden = !hasQr;
+      if (wheelPanel) wheelPanel.hidden = hasQr;
+
+      if (mountEl && hasQr) {
         mountQrCodeWithLibrary(mountEl, url);
       }
     }
@@ -5252,16 +5355,69 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
       }
     }
 
+    function buildFocusContactCard(cap) {
+      var card = document.createElement("article");
+      card.className = "focus-contact-card";
+      card.setAttribute("role", "listitem");
+      card.dataset.domain = cap.category;
+
+      var header = document.createElement("div");
+      header.className = "focus-contact-card-header";
+
+      var title = document.createElement("h3");
+      title.className = "focus-contact-card-title";
+      title.textContent = cap.title;
+      header.appendChild(title);
+
+      var icon = document.createElement("span");
+      icon.className = "focus-contact-card-icon";
+      icon.setAttribute("aria-hidden", "true");
+      header.appendChild(icon);
+
+      card.appendChild(header);
+
+      var body = document.createElement("div");
+      body.className = "focus-contact-card-body";
+
+      var avatar = document.createElement("span");
+      avatar.className = "focus-contact-card-avatar";
+      avatar.setAttribute("aria-hidden", "true");
+      body.appendChild(avatar);
+
+      var details = document.createElement("div");
+      details.className = "focus-contact-card-details";
+
+      var roleBadge = document.createElement("span");
+      roleBadge.className = "focus-contact-card-role";
+      roleBadge.textContent = "AI Transformation Lead";
+      details.appendChild(roleBadge);
+
+      var name = document.createElement("p");
+      name.className = "focus-contact-card-name";
+      name.textContent = "Lead Practitioner";
+      details.appendChild(name);
+
+      var email = document.createElement("p");
+      email.className = "focus-contact-card-email";
+      email.textContent = "contact@example.com";
+      details.appendChild(email);
+
+      body.appendChild(details);
+      card.appendChild(body);
+
+      return card;
+    }
+
     function renderFocusMapView() {
-      var host = document.getElementById("focus-content-host");
+      var host = document.getElementById("focus-cards-host");
+      var scrollEl = document.getElementById("focus-cards-scroll");
       host.innerHTML = "";
+      if (scrollEl) scrollEl.classList.remove("is-scrollable");
 
-      // The page lede frames the Starred Capabilities list; hide it when the
-      // list is empty so the empty-state message stands on its own.
-      var pageLede = document.getElementById("focus-page-lede");
-      if (pageLede) pageLede.hidden = selectedCapabilities.length === 0;
+      var count = selectedCapabilities.length;
 
-      if (selectedCapabilities.length === 0) {
+      if (count === 0) {
+        host.style.gridTemplateColumns = "1fr";
         var empty = document.createElement("div");
         empty.className = "empty-state";
         empty.innerHTML =
@@ -5269,34 +5425,21 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
           "Return to the Capability Map and star the capabilities you want to carry forward.";
         host.appendChild(empty);
       } else {
-        var heading = document.createElement("h2");
-        heading.className = "focus-section-heading";
-        heading.textContent = "Starred Capabilities";
-        host.appendChild(heading);
-
-        var ul = document.createElement("ul");
-        ul.className = "focus-list";
+        if (count <= 3) {
+          host.style.gridTemplateColumns = "repeat(" + count + ", minmax(0, 1fr))";
+        } else {
+          host.style.gridTemplateColumns = "repeat(3, minmax(0, 1fr))";
+        }
+        if (count > 6 && scrollEl) {
+          scrollEl.classList.add("is-scrollable");
+        }
 
         for (var i = 0; i < selectedCapabilities.length; i++) {
           var id = selectedCapabilities[i];
           var cap = capabilityById(id);
           if (!cap) continue;
-
-          var li = document.createElement("li");
-          li.className = "focus-item";
-
-          var h3 = document.createElement("h3");
-          h3.textContent = cap.title;
-          li.appendChild(h3);
-
-          var p = document.createElement("p");
-          p.textContent = cap.description;
-          li.appendChild(p);
-
-          ul.appendChild(li);
+          host.appendChild(buildFocusContactCard(cap));
         }
-
-        host.appendChild(ul);
       }
 
       refreshStatelessParameterPreview();
@@ -5342,8 +5485,6 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
     document.getElementById("btn-back-explore").addEventListener("click", function () {
       showView("explore");
     });
-
-    document.getElementById("btn-copy-url").addEventListener("click", copyStatelessUrlToClipboard);
 
     // Both Clear buttons (header + sticky footer twin) share the two-tap
     // confirm handler; their armed text and styling stay in sync via
