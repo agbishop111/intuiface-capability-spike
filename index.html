@@ -442,11 +442,12 @@
       min-height: 4.5rem;
       padding: 0.85rem 1.1rem;
       font-family: var(--font-sans);
-      background: #f1f5f9;
+      background: #fff;
       border: 2px solid #e2e8f0;
       border-radius: 0.55rem;
       cursor: pointer;
       touch-action: manipulation;
+      transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
     }
 
     .btn-response-title {
@@ -467,15 +468,12 @@
       transform: scale(0.99);
     }
 
-    .btn-response:nth-child(1) { background: var(--airmf-foundations-soft); border-color: #c5e1a5; }
-    .btn-response:nth-child(2) { background: var(--airmf-development-soft); border-color: #80cbc4; }
-    .btn-response:nth-child(3) { background: var(--airmf-adoption-soft); border-color: #90caf9; }
-    .btn-response:nth-child(4) { background: var(--airmf-foundations-soft); border-color: #c5e1a5; }
-
     .btn-response[aria-pressed="true"] {
-      background: #fff;
-      border-color: var(--airmf-accent);
-      box-shadow: 0 0 0 3px rgba(139, 195, 74, 0.35);
+      background: var(--airmf-foundations-soft);
+      border-color: var(--airmf-foundations);
+      box-shadow:
+        0 0 0 3px rgba(139, 195, 74, 0.45),
+        0 4px 14px rgba(139, 195, 74, 0.2);
     }
 
     .btn-response[aria-pressed="true"] .btn-response-title {
@@ -483,35 +481,8 @@
       font-weight: 700;
     }
 
-    /* Guided step 2: soften unselected journey cards while keeping them readable. */
-    .guided-overlay[data-guided-step="recommendations"] .btn-response:not([aria-pressed="true"]) {
-      border-color: #cfd8e3;
-      box-shadow: none;
-    }
-
-    .guided-overlay[data-guided-step="recommendations"] .btn-response:not([aria-pressed="true"]) .btn-response-title {
-      color: #5c6b7a;
-      font-weight: 650;
-    }
-
-    .guided-overlay[data-guided-step="recommendations"] .btn-response:not([aria-pressed="true"]) .btn-response-desc {
-      color: #7a8a9a;
-    }
-
-    .guided-overlay[data-guided-step="recommendations"] .btn-response[aria-pressed="true"] {
-      box-shadow: 0 0 0 3px rgba(139, 195, 74, 0.45);
-    }
-
-    .guided-overlay[data-guided-step="recommendations"] .guided-entry-sub {
-      display: none;
-    }
-
-    .guided-overlay[data-guided-step="recommendations"] .guided-entry-heading {
-      margin-bottom: clamp(1rem, 2cqh, 1.5rem);
-    }
-
     .btn-response:focus-visible {
-      outline: 2px solid var(--airmf-navy);
+      outline: 2px solid var(--airmf-foundations);
       outline-offset: 2px;
     }
 
@@ -584,6 +555,13 @@
       color: var(--airmf-navy);
       line-height: 1.2;
       letter-spacing: -0.01em;
+    }
+
+    .map-journey-context-value.is-empty {
+      font-family: var(--font-sans);
+      font-size: clamp(0.88rem, 1.25cqh, 0.98rem);
+      font-weight: 600;
+      color: #64748b;
     }
 
     .explore-sidebar-filters-heading {
@@ -854,7 +832,7 @@
       flex-direction: column;
       gap: 0;
       align-items: stretch;
-      justify-content: flex-start;
+      justify-content: center;
       position: relative;
       overflow: visible;
       min-height: 0;
@@ -878,6 +856,36 @@
       width: 100%;
       line-height: 1.2;
       letter-spacing: -0.015em;
+    }
+
+    .intro-start-cta {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      min-height: var(--intro-cta-height);
+      padding: 1.15rem 1.5rem;
+      font-family: var(--font-serif);
+      font-size: 1.55rem;
+      font-weight: 700;
+      letter-spacing: -0.015em;
+      line-height: 1.15;
+      color: #558b2f;
+      background: var(--airmf-panel);
+      border: 2px solid var(--airmf-accent);
+      border-radius: 0.5rem;
+      cursor: pointer;
+      touch-action: manipulation;
+      transition: transform 0.1s ease;
+    }
+
+    .intro-start-cta:active {
+      transform: scale(0.99);
+    }
+
+    .intro-start-cta:focus-visible {
+      outline: 2px solid var(--airmf-adoption);
+      outline-offset: 2px;
     }
 
     .intro-path-card {
@@ -1578,9 +1586,9 @@
 
     /* ------------------------------------------------------------------
        Wheel hotspot visual hierarchy — three visible meanings only:
-       1. Green ring/glow = recommended (journey)
+       1. Green ring/glow = recommended (journey); faint when filtered out
        2. Gold star badge = saved/starred
-       3. Dimmed = filtered out
+       3. Dimmed = filtered out (includes out-of-filter recommendations)
        Baseline domain border + label color applies otherwise.
        Viewed is tracked in JS but not shown on the wheel.
        ------------------------------------------------------------------ */
@@ -1597,12 +1605,18 @@
       filter: saturate(0.55);
     }
 
-    /* Recommended — green ring/glow; same treatment when also starred. */
-    .wheel-target.is-recommended .wheel-target-hit {
+    /* Recommended inside the active filter (or with no filter) — full green ring. */
+    .wheel-target.is-recommended:not(.is-dimmed) .wheel-target-hit {
       border-color: var(--airmf-foundations);
       box-shadow:
         0 0 0 3px rgba(139, 195, 74, 0.5),
         0 0 16px rgba(139, 195, 74, 0.28);
+    }
+
+    /* Recommended but outside the active filter — discoverable, still subdued. */
+    .wheel-target.is-recommended.is-dimmed .wheel-target-hit {
+      border-color: rgba(124, 179, 66, 0.5);
+      box-shadow: 0 0 0 2px rgba(139, 195, 74, 0.22);
     }
 
     /* Debug alignment mode — toggle SHOW_HOTSPOT_DEBUG in JS. */
@@ -2832,23 +2846,116 @@
       display: none;
     }
 
-    /* Guided Experience: two-step overlay on the Capability Map. */
+    /* Journey question dialog — centered modal over the capability map. */
     .guided-overlay {
       position: absolute;
       inset: 0;
       z-index: 40;
-      display: grid;
-      grid-template-columns: minmax(0, 40%) 1fr;
-      grid-template-rows: minmax(0, 1fr);
-      height: 100%;
-      max-height: 100%;
-      padding: 0;
-      background: transparent;
-      pointer-events: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: clamp(1rem, 2.5cqw, 2rem);
     }
 
     .guided-overlay[hidden] {
       display: none;
+    }
+
+    .guided-overlay-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(8, 12, 18, 0.68);
+    }
+
+    .guided-dialog {
+      position: relative;
+      z-index: 1;
+      width: min(100%, clamp(34rem, 22cqw, 38rem));
+      max-height: 92%;
+      overflow: hidden;
+      background: var(--airmf-panel);
+      border-radius: 0.75rem;
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.32);
+      padding: clamp(1.35rem, 2.6cqh, 2rem) clamp(1.35rem, 2.4cqw, 2.1rem);
+    }
+
+    .guided-dialog-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+      margin-top: 0.5rem;
+      padding-top: 0.85rem;
+      border-top: 1px solid #e2e8f0;
+    }
+
+    .guided-selection-hint {
+      margin: 0.35rem 0 0;
+      font-size: clamp(0.88rem, 1.35cqh, 1rem);
+      font-weight: 500;
+      line-height: 1.4;
+      color: #558b2f;
+      text-wrap: balance;
+    }
+
+    .guided-selection-hint[hidden] {
+      display: none;
+    }
+
+    .btn-guided-confirm {
+      width: 100%;
+      min-height: clamp(2.85rem, 5.5cqh, 3.35rem);
+      padding: 0.75rem 1.1rem;
+      font-family: var(--font-sans);
+      font-size: clamp(0.95rem, 1.45cqh, 1.05rem);
+      font-weight: 700;
+      color: #1a2e05;
+      background: var(--airmf-accent);
+      border: 2px solid var(--airmf-accent);
+      border-radius: 0.45rem;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    .btn-guided-confirm:active:not(:disabled) {
+      background: #7cb342;
+      border-color: #7cb342;
+    }
+
+    .btn-guided-confirm:disabled {
+      background: #e2e8f0;
+      border-color: #e2e8f0;
+      color: #94a3b8;
+      cursor: not-allowed;
+    }
+
+    .btn-guided-confirm:focus-visible {
+      outline: 2px solid #93c5fd;
+      outline-offset: 2px;
+    }
+
+    .btn-guided-skip {
+      width: 100%;
+      min-height: clamp(2.75rem, 5.25cqh, 3.15rem);
+      padding: 0.7rem 1.1rem;
+      font-family: var(--font-sans);
+      font-size: clamp(0.92rem, 1.35cqh, 1rem);
+      font-weight: 600;
+      color: #64748b;
+      background: transparent;
+      border: 1px solid #cbd5e1;
+      border-radius: 0.45rem;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    .btn-guided-skip:active {
+      background: #f8fafc;
+      border-color: #94a3b8;
+    }
+
+    .btn-guided-skip:focus-visible {
+      outline: 2px solid #93c5fd;
+      outline-offset: 2px;
     }
 
     .guided-panel {
@@ -2856,16 +2963,10 @@
     }
 
     .guided-panel--question {
-      grid-column: 1;
-      grid-row: 1;
-      background: var(--airmf-panel);
-      padding: clamp(1.1rem, 2.2cqh, 1.65rem) clamp(1.1rem, 2cqw, 1.75rem);
       display: flex;
       flex-direction: column;
       justify-content: stretch;
       min-height: 0;
-      max-height: 100%;
-      box-shadow: 8px 0 32px rgba(0, 0, 0, 0.12);
       overflow: hidden;
     }
 
@@ -3153,10 +3254,10 @@
 
     .guided-entry--overlay .guided-entry-heading {
       flex-shrink: 0;
-      font-size: clamp(1.65rem, 3.5cqh, 2.25rem);
+      font-size: clamp(1.75rem, 3.75cqh, 2.4rem);
       line-height: 1.12;
       letter-spacing: -0.025em;
-      margin-bottom: clamp(0.9rem, 1.75cqh, 1.3rem);
+      margin-bottom: clamp(1rem, 2cqh, 1.45rem);
     }
 
     .guided-entry--overlay .guided-entry-sub {
@@ -3170,25 +3271,25 @@
       display: flex;
       flex-direction: column;
       justify-content: space-evenly;
-      gap: clamp(0.7rem, 1.35cqh, 1rem);
+      gap: clamp(0.85rem, 1.55cqh, 1.15rem);
       min-height: 0;
     }
 
     .guided-entry--overlay .btn-response {
       flex: 1 1 0;
-      min-height: clamp(4.75rem, 9cqh, 5.85rem);
-      padding: clamp(0.8rem, 1.25cqh, 1.05rem) clamp(0.9rem, 1.25cqw, 1.15rem);
-      gap: 0.3rem;
+      min-height: clamp(5rem, 9.5cqh, 6.25rem);
+      padding: clamp(0.9rem, 1.4cqh, 1.15rem) clamp(1rem, 1.4cqw, 1.25rem);
+      gap: 0.35rem;
     }
 
     .guided-entry--overlay .btn-response-title {
-      font-size: clamp(0.95rem, 1.55cqh, 1.12rem);
+      font-size: clamp(1rem, 1.65cqh, 1.18rem);
       line-height: 1.2;
     }
 
     .guided-entry--overlay .btn-response-desc {
-      font-size: clamp(0.75rem, 1.15cqh, 0.86rem);
-      line-height: 1.32;
+      font-size: clamp(0.8rem, 1.25cqh, 0.92rem);
+      line-height: 1.34;
     }
 
     @media (max-width: 1100px) {
@@ -3309,22 +3410,10 @@
             Whether you&rsquo;re exploring, building, scaling, or adopting AI, aiRMF provides the structure and support to help you move forward.
           </p>
         </section>
-        <section class="intro-visual-panel" aria-labelledby="intro-actions-heading">
+        <section class="intro-visual-panel" aria-label="Start exploring">
           <div class="intro-actions-block">
-            <p class="intro-actions-label" id="intro-actions-heading">How would you like to begin?</p>
-            <button type="button" id="btn-explore-freely" class="intro-path-card intro-path-card--explore">
-              <span class="intro-path-card-text">
-                <strong>Explore Freely</strong>
-                <span>Browse the full set of capabilities and navigate based on your areas of interest</span>
-              </span>
-              <span class="intro-path-chevron" aria-hidden="true">›</span>
-            </button>
-            <button type="button" id="btn-guided-experience" class="intro-path-card intro-path-card--guided">
-              <span class="intro-path-card-text">
-                <strong>Guided Experience</strong>
-                <span>Answer a question to highlight capabilities relevant to your current focus</span>
-              </span>
-              <span class="intro-path-chevron" aria-hidden="true">›</span>
+            <button type="button" id="btn-start-exploring" class="intro-start-cta">
+              Start Exploring
             </button>
           </div>
         </section>
@@ -3361,10 +3450,9 @@
             </section>
           </div>
           <div class="map-journey-context" id="map-journey-context" hidden>
-            <span class="map-journey-context-eyebrow">Your journey</span>
             <div class="map-journey-context-row">
-              <p class="map-journey-context-value" id="map-journey-context-value"></p>
-              <button type="button" class="btn-journey-edit" id="btn-edit-journey">Change</button>
+              <p class="map-journey-context-value is-empty" id="map-journey-context-value">No AI journey selected</p>
+              <button type="button" class="btn-journey-edit" id="btn-edit-journey">Select Journey</button>
             </div>
           </div>
         </aside>
@@ -3503,43 +3591,25 @@
     </div>
   </div>
 
-  <!-- Guided Experience: journey question (left) + map or recommendations (right). -->
-  <div id="guided-experience-overlay" class="guided-overlay" hidden data-guided-step="question" role="dialog" aria-modal="true" aria-labelledby="guided-entry-heading">
-    <div class="guided-panel guided-panel--question" id="guided-panel-question">
+  <!-- Journey question dialog — opens over the capability map. -->
+  <div id="guided-experience-overlay" class="guided-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="guided-entry-heading">
+    <div class="guided-overlay-backdrop" aria-hidden="true"></div>
+    <div class="guided-dialog guided-panel guided-panel--question" id="guided-panel-question">
       <section class="guided-entry guided-entry--overlay" aria-labelledby="guided-entry-heading">
         <h2 class="guided-entry-heading" id="guided-entry-heading">
           Where are you on your AI journey?
         </h2>
-        <p class="guided-entry-sub">Choose one:</p>
         <div id="guided-entry-host" class="guided-entry-buttons" role="group" aria-label="AI journey stage"></div>
+        <p id="guided-selection-hint" class="guided-selection-hint" hidden>
+          Recommended capabilities will appear with a green ring on the map.
+        </p>
+        <div class="guided-dialog-actions">
+          <button type="button" id="btn-confirm-journey" class="btn-guided-confirm" disabled>
+            Show Recommendations
+          </button>
+          <button type="button" id="btn-skip-journey" class="btn-guided-skip">Skip for now</button>
+        </div>
       </section>
-    </div>
-    <div class="guided-panel guided-panel--map-scrim" id="guided-panel-map-scrim">
-      <div class="guided-map-preview-spacer" aria-hidden="true"></div>
-      <aside class="guided-alt-explore" aria-label="Browse without guidance">
-        <p class="guided-alt-explore-copy">
-          Prefer to browse all capabilities?<br>
-          Explore the full capability map instead.
-        </p>
-        <button type="button" id="btn-explore-freely-overlay" class="btn btn-guided-explore-secondary">
-          Explore Freely
-        </button>
-      </aside>
-    </div>
-    <div class="guided-panel guided-panel--recommendations" id="guided-panel-recommendations" aria-labelledby="guided-recommendations-heading">
-      <h2 class="guided-recommendations-heading" id="guided-recommendations-heading">
-        Recommended capabilities
-      </h2>
-      <div id="guided-recommendations-host" class="guided-recommendation-cards" role="list"></div>
-      <aside class="guided-alt-explore guided-alt-explore--compact" aria-label="Browse without guidance">
-        <p class="guided-alt-explore-copy">
-          Prefer to browse all capabilities?<br>
-          Explore the full capability map instead.
-        </p>
-        <button type="button" id="btn-explore-freely-guided" class="btn btn-guided-explore-secondary">
-          Explore Freely
-        </button>
-      </aside>
     </div>
   </div>
 
@@ -4421,94 +4491,92 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
     };
 
     var selectedQuestionResponse = null;
-    var guidedExperienceStep = "question";
+    /** Dialog-only journey pick; applied on "Show Recommendations". */
+    var pendingQuestionResponse = null;
 
-    function updateGuidedOverlayStep() {
-      var overlay = document.getElementById("guided-experience-overlay");
-      if (!overlay) return;
-      overlay.dataset.guidedStep = guidedExperienceStep;
-      overlay.setAttribute(
-        "aria-labelledby",
-        guidedExperienceStep === "recommendations"
-          ? "guided-recommendations-heading"
-          : "guided-entry-heading"
-      );
+    function getQuestionResponseLabel(responseId) {
+      for (var i = 0; i < QUESTION_RESPONSES.length; i++) {
+        if (QUESTION_RESPONSES[i].id === responseId) {
+          return QUESTION_RESPONSES[i].label;
+        }
+      }
+      return "";
     }
 
-    /**
-     * After a journey answer: keep the question panel visible on the left and
-     * show recommendation cards on the right. Changing the answer updates
-     * recommendations and wheel highlights.
-     */
-    function selectQuestionResponse(responseId) {
-      selectedQuestionResponse = responseId;
-      guidedExperienceStep = "recommendations";
-      renderGuidedExperience();
-      renderGuidedRecommendations();
-      updateGuidedOverlayStep();
-      renderExploreView();
-    }
-
-    function showGuidedExperienceOverlay() {
+    /** Opens the journey question dialog over the capability map. */
+    function openJourneyQuestionDialog() {
       var overlay = document.getElementById("guided-experience-overlay");
       if (!overlay) return;
-      selectedQuestionResponse = null;
-      guidedExperienceStep = "question";
+      pendingQuestionResponse = selectedQuestionResponse;
       renderGuidedExperience();
-      renderGuidedRecommendations();
-      updateGuidedOverlayStep();
-      renderExploreView();
+      updateJourneyDialogUI();
       overlay.hidden = false;
-      setTimeout(function () {
-        var first = overlay.querySelector(".btn-response");
-        if (first) first.focus();
-      }, 0);
-    }
-
-    /** Reopen guided overlay to change journey answer (soft-landing edit). */
-    function openGuidedExperienceForEdit() {
-      var overlay = document.getElementById("guided-experience-overlay");
-      if (!overlay) return;
-      guidedExperienceStep = selectedQuestionResponse ? "recommendations" : "question";
-      renderGuidedExperience();
-      renderGuidedRecommendations();
-      updateGuidedOverlayStep();
       renderExploreView();
-      overlay.hidden = false;
       setTimeout(function () {
         var active = overlay.querySelector('.btn-response[aria-pressed="true"]');
-        var focusTarget = active || overlay.querySelector(".btn-response");
+        var focusTarget = active || overlay.querySelector(".btn-response") || document.getElementById("btn-skip-journey");
         if (focusTarget) focusTarget.focus();
       }, 0);
     }
 
-    function hideGuidedExperienceOverlay() {
-      var overlay = document.getElementById("guided-experience-overlay");
-      if (overlay) overlay.hidden = true;
-      guidedExperienceStep = "question";
-      updateGuidedOverlayStep();
+    function updateJourneyDialogUI() {
+      var confirmBtn = document.getElementById("btn-confirm-journey");
+      var hint = document.getElementById("guided-selection-hint");
+      var hasPending = !!pendingQuestionResponse;
+      if (confirmBtn) {
+        confirmBtn.disabled = !hasPending;
+        confirmBtn.setAttribute("aria-disabled", hasPending ? "false" : "true");
+      }
+      if (hint) {
+        hint.hidden = !hasPending;
+      }
     }
 
-    /** Hard reset: clears journey answer, highlights, and sidebar recommend note. */
-    function clearGuidedJourneyState() {
-      selectedQuestionResponse = null;
-      guidedExperienceStep = "question";
-      hideGuidedExperienceOverlay();
-      renderGuidedExperience();
-      renderGuidedRecommendations();
+    function hideJourneyQuestionDialog() {
+      var overlay = document.getElementById("guided-experience-overlay");
+      if (overlay) overlay.hidden = true;
+      pendingQuestionResponse = null;
       renderExploreView();
     }
 
-    /**
-     * Soft landing: dismiss the guided overlay but keep the journey answer,
-     * wheel highlights, and sidebar recommend note so free exploration
-     * continues with advisory context.
-     */
-    function dismissGuidedOverlaySoftLanding() {
-      guidedExperienceStep = "question";
-      hideGuidedExperienceOverlay();
+    /** Toggles the tapped answer in the dialog without applying it yet. */
+    function selectPendingQuestionResponse(responseId) {
+      pendingQuestionResponse =
+        pendingQuestionResponse === responseId ? null : responseId;
       renderGuidedExperience();
-      renderGuidedRecommendations();
+      updateJourneyDialogUI();
+    }
+
+    /**
+     * Applies the pending journey answer, closes the dialog, and refreshes wheel highlights.
+     */
+    function confirmJourneyQuestion() {
+      if (!pendingQuestionResponse) return;
+      selectedQuestionResponse = pendingQuestionResponse;
+      hideJourneyQuestionDialog();
+      renderGuidedExperience();
+      renderExploreView();
+    }
+
+    /** Closes the dialog without saving a journey answer or recommendations. */
+    function skipJourneyQuestion() {
+      selectedQuestionResponse = null;
+      pendingQuestionResponse = null;
+      hideJourneyQuestionDialog();
+      renderGuidedExperience();
+      renderExploreView();
+    }
+
+    /** Closes the dialog without changing the current journey answer. */
+    function closeJourneyQuestionDialog() {
+      hideJourneyQuestionDialog();
+    }
+
+    /** Hard reset: clears journey answer, highlights, and sidebar journey note. */
+    function clearGuidedJourneyState() {
+      selectedQuestionResponse = null;
+      hideJourneyQuestionDialog();
+      renderGuidedExperience();
       renderExploreView();
     }
 
@@ -4525,8 +4593,6 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
 
     function isWheelTargetDimmed(cap) {
       if (!selectedCategoryFilter || cap.category === selectedCategoryFilter) return false;
-      /* Journey recommendations stay visible even when a domain filter is active. */
-      if (selectedQuestionResponse && isCapabilityRecommended(cap.id)) return false;
       return true;
     }
 
@@ -4919,14 +4985,14 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
       if (clearArmed) resetClearArmState();
     }
 
-    /** Guided Experience overlay: journey question buttons. */
+    /** Guided journey dialog: journey question buttons. */
     function renderGuidedExperience() {
       var host = document.getElementById("guided-entry-host");
       if (!host) return;
       host.innerHTML = "";
       for (var i = 0; i < QUESTION_RESPONSES.length; i++) {
         var response = QUESTION_RESPONSES[i];
-        var active = selectedQuestionResponse === response.id;
+        var active = pendingQuestionResponse === response.id;
         var btn = document.createElement("button");
         btn.type = "button";
         btn.className = "btn-response";
@@ -4944,62 +5010,10 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
 
         btn.addEventListener("click", function (id) {
           return function () {
-            selectQuestionResponse(id);
+            selectPendingQuestionResponse(id);
           };
         }(response.id));
         host.appendChild(btn);
-      }
-    }
-
-    /** Guided Experience step 2: recommendation cards over the capability map. */
-    function renderGuidedRecommendations() {
-      var host = document.getElementById("guided-recommendations-host");
-      if (!host) return;
-      host.innerHTML = "";
-      if (!selectedQuestionResponse) return;
-
-      var ids = JOURNEY_RECOMMENDATIONS[selectedQuestionResponse] || [];
-      for (var i = 0; i < ids.length; i++) {
-        var cap = capabilityById(ids[i]);
-        if (!cap) continue;
-
-        var card = document.createElement("button");
-        card.type = "button";
-        card.className = "guided-recommendation-card";
-        card.setAttribute("role", "listitem");
-        card.setAttribute("aria-label", cap.title + ". Explore capability.");
-
-        var art = document.createElement("div");
-        art.className = "guided-recommendation-art";
-        art.setAttribute("aria-hidden", "true");
-        card.appendChild(art);
-
-        var body = document.createElement("div");
-        body.className = "guided-recommendation-body";
-
-        var heading = document.createElement("h3");
-        heading.className = "guided-recommendation-title";
-        heading.textContent = cap.title;
-        body.appendChild(heading);
-
-        var text = document.createElement("p");
-        text.className = "guided-recommendation-desc";
-        text.textContent = cap.description;
-        body.appendChild(text);
-
-        var learn = document.createElement("span");
-        learn.className = "btn btn-primary";
-        learn.setAttribute("aria-hidden", "true");
-        learn.textContent = "Explore Capability";
-        body.appendChild(learn);
-
-        card.addEventListener("click", function (capId) {
-          return function () {
-            openCapabilityModal(capId);
-          };
-        }(cap.id));
-        card.appendChild(body);
-        host.appendChild(card);
       }
     }
 
@@ -5142,22 +5156,23 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
       updateFocusButtonState();
       var journeyContext = document.getElementById("map-journey-context");
       var journeyValue = document.getElementById("map-journey-context-value");
+      var journeyEditBtn = document.getElementById("btn-edit-journey");
       var guided = document.getElementById("guided-experience-overlay");
       var guidedOpen = guided && !guided.hidden;
-      if (journeyContext && journeyValue) {
-        if (!selectedQuestionResponse || guidedOpen) {
+      if (journeyContext && journeyValue && journeyEditBtn) {
+        if (guidedOpen) {
           journeyContext.hidden = true;
-          journeyValue.textContent = "";
         } else {
-          var priorityLabel = "";
-          for (var q = 0; q < QUESTION_RESPONSES.length; q++) {
-            if (QUESTION_RESPONSES[q].id === selectedQuestionResponse) {
-              priorityLabel = QUESTION_RESPONSES[q].label;
-              break;
-            }
-          }
-          journeyValue.textContent = priorityLabel || "Selected";
           journeyContext.hidden = false;
+          if (selectedQuestionResponse) {
+            journeyValue.textContent = "Your AI Journey: " + getQuestionResponseLabel(selectedQuestionResponse);
+            journeyValue.classList.remove("is-empty");
+            journeyEditBtn.textContent = "Change";
+          } else {
+            journeyValue.textContent = "No AI journey selected";
+            journeyValue.classList.add("is-empty");
+            journeyEditBtn.textContent = "Select Journey";
+          }
         }
       }
       renderCategoryFilters();
@@ -5229,20 +5244,17 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
       showView("airmf");
     });
 
-    document.getElementById("btn-explore-freely").addEventListener("click", function () {
-      clearGuidedJourneyState();
+    function handleStartExploring() {
       showView("explore");
-    });
+      openJourneyQuestionDialog();
+    }
 
-    document.getElementById("btn-guided-experience").addEventListener("click", function () {
-      showView("explore");
-      showGuidedExperienceOverlay();
-    });
+    document.getElementById("btn-start-exploring").addEventListener("click", handleStartExploring);
 
-    document.getElementById("btn-edit-journey").addEventListener("click", openGuidedExperienceForEdit);
+    document.getElementById("btn-edit-journey").addEventListener("click", openJourneyQuestionDialog);
 
-    document.getElementById("btn-explore-freely-overlay").addEventListener("click", dismissGuidedOverlaySoftLanding);
-    document.getElementById("btn-explore-freely-guided").addEventListener("click", dismissGuidedOverlaySoftLanding);
+    document.getElementById("btn-confirm-journey").addEventListener("click", confirmJourneyQuestion);
+    document.getElementById("btn-skip-journey").addEventListener("click", skipJourneyQuestion);
 
     // "View AI Focus Map" — same behavior for the header CTA and the sticky
     // footer twin; both share this guarded handler.
@@ -5302,7 +5314,7 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
       }
       var guided = document.getElementById("guided-experience-overlay");
       if (guided && !guided.hidden) {
-        dismissGuidedOverlaySoftLanding();
+        closeJourneyQuestionDialog();
         return;
       }
       var overlay = document.getElementById("capability-modal");
@@ -5314,7 +5326,6 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
     updateSessionIdDisplays();
     refreshFocusQrDisplay();
     renderGuidedExperience();
-    renderGuidedRecommendations();
     renderExploreView();
     refreshStatelessParameterPreview();
   </script>
