@@ -98,12 +98,11 @@
     .preview-title,
     .wheel-target-label,
     .experience-card-title,
-    .focus-section-heading,
     .intro-section-heading,
     .intro-support-heading,
     .intro-actions-label,
     .guided-entry-heading,
-    .focus-item h3,
+    .focus-contact-card-title,
     .intro-path-card-text strong,
     .empty-state strong {
       font-family: var(--font-serif);
@@ -1172,6 +1171,11 @@
       font-size: 0.9rem;
     }
 
+    /* Footer Focus Map CTA superseded by wheel center hub — keep in DOM for JS fallback. */
+    #btn-to-focus-footer {
+      display: none;
+    }
+
     #view-explore .btn-primary:disabled {
       background: #e2e8f0;
       color: #64748b;
@@ -1451,6 +1455,87 @@
       color: var(--airmf-navy);
     }
 
+    /* Center hub — primary AI Focus Map CTA (distinct from capability hotspots). */
+    .wheel-focus-hub {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      z-index: 2;
+      transform: translate(-50%, -50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.22rem;
+      width: 23%;
+      height: 23%;
+      min-width: 5.75rem;
+      min-height: 5.75rem;
+      max-width: 9.5rem;
+      max-height: 9.5rem;
+      margin: 0;
+      padding: 0.55rem 0.45rem;
+      border: 2px solid rgba(255, 255, 255, 0.22);
+      border-radius: 50%;
+      background: #1a3352;
+      color: #fff;
+      font-family: var(--font-sans);
+      cursor: not-allowed;
+      touch-action: manipulation;
+      box-shadow: 0 4px 16px rgba(15, 39, 68, 0.45);
+      transition:
+        background 0.15s ease,
+        border-color 0.15s ease,
+        box-shadow 0.15s ease,
+        transform 0.15s ease;
+    }
+
+    .wheel-focus-hub.is-active {
+      background: var(--airmf-navy);
+      border-color: rgba(255, 255, 255, 0.45);
+      box-shadow: 0 6px 24px rgba(15, 39, 68, 0.55);
+      cursor: pointer;
+    }
+
+    .wheel-focus-hub.is-active:hover {
+      background: #163456;
+      border-color: rgba(255, 255, 255, 0.58);
+      box-shadow: 0 8px 28px rgba(15, 39, 68, 0.62);
+      transform: translate(-50%, -50%) scale(1.03);
+    }
+
+    .wheel-focus-hub.is-active:active {
+      transform: translate(-50%, -50%) scale(0.98);
+    }
+
+    .wheel-focus-hub:focus-visible {
+      outline: 2px solid var(--airmf-adoption);
+      outline-offset: 4px;
+    }
+
+    .wheel-focus-hub-title {
+      font-family: var(--font-serif);
+      font-size: clamp(0.64rem, 1.5cqw, 0.82rem);
+      font-weight: 800;
+      line-height: 1.12;
+      text-align: center;
+      text-wrap: balance;
+      color: #fff;
+    }
+
+    .wheel-focus-hub-count {
+      font-size: clamp(0.54rem, 1.15cqw, 0.68rem);
+      font-weight: 600;
+      line-height: 1.15;
+      text-align: center;
+      color: rgba(255, 255, 255, 0.78);
+    }
+
+    .wheel-focus-hub.is-active .wheel-focus-hub-count {
+      color: rgba(255, 255, 255, 0.92);
+      font-weight: 600;
+    }
+
     .wheel-targets {
       position: absolute;
       inset: 0;
@@ -1488,7 +1573,11 @@
       cursor: pointer;
       touch-action: manipulation;
       overflow: visible;
-      transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+      transition:
+        background 0.15s ease,
+        border-color 0.15s ease,
+        box-shadow 0.15s ease,
+        transform 0.15s ease;
     }
 
     .wheel-target-icon {
@@ -1501,32 +1590,49 @@
       transition: filter 0.15s ease, opacity 0.15s ease;
     }
 
+    /* Category baseline — soft filled hotspot + domain border (icon asset unchanged). */
     .wheel-target[data-domain="foundations"] .wheel-target-hit {
-      border-color: rgba(139, 195, 74, 0.35);
+      background: color-mix(in srgb, var(--airmf-foundations-soft) 78%, transparent);
+      border-color: color-mix(in srgb, var(--airmf-foundations) 48%, transparent);
     }
 
     .wheel-target[data-domain="development"] .wheel-target-hit {
-      border-color: rgba(38, 166, 154, 0.35);
+      background: color-mix(in srgb, var(--airmf-development-soft) 78%, transparent);
+      border-color: color-mix(in srgb, var(--airmf-development) 48%, transparent);
     }
 
     .wheel-target[data-domain="adoption"] .wheel-target-hit {
-      border-color: rgba(66, 165, 245, 0.35);
+      background: color-mix(in srgb, var(--airmf-adoption-soft) 78%, transparent);
+      border-color: color-mix(in srgb, var(--airmf-adoption) 48%, transparent);
     }
 
     .wheel-target-star {
       position: absolute;
-      top: -0.14rem;
-      right: -0.14rem;
-      font-size: 0.58rem;
-      line-height: 1;
-      color: #f59e0b;
-      text-shadow: 0 1px 2px rgba(255, 255, 255, 0.9), 0 0 4px rgba(245, 158, 11, 0.35);
-      pointer-events: none;
+      top: -8%;
+      right: -8%;
+      z-index: 1;
       display: none;
+      align-items: center;
+      justify-content: center;
+      width: 38%;
+      height: 38%;
+      min-width: 1.25rem;
+      min-height: 1.25rem;
+      padding: 0;
+      border: 2px solid #f59e0b;
+      border-radius: 50%;
+      background: #fff;
+      font-size: clamp(0.78rem, 1.55cqw, 1.05rem);
+      line-height: 1;
+      text-align: center;
+      color: #f59e0b;
+      text-shadow: 0 0 4px rgba(245, 158, 11, 0.35);
+      box-shadow: 0 1px 4px rgba(15, 39, 68, 0.22);
+      pointer-events: none;
     }
 
     .wheel-target.is-selected .wheel-target-star {
-      display: block;
+      display: flex;
     }
 
     /* Capability label — offset from icon by labelPosition on .wheel-target. */
@@ -1585,38 +1691,45 @@
     }
 
     /* ------------------------------------------------------------------
-       Wheel hotspot visual hierarchy — three visible meanings only:
-       1. Green ring/glow = recommended (journey); faint when filtered out
-       2. Gold star badge = saved/starred
-       3. Dimmed = filtered out (includes out-of-filter recommendations)
-       Baseline domain border + label color applies otherwise.
+       Wheel hotspot visual hierarchy:
+       1. Category fill + border = domain baseline on every target
+       2. Heavy green ring/glow = recommended (journey); faint when filtered out
+       3. Gold star badge = saved/starred (does not replace fill or ring)
+       4. Dimmed = filtered out; matching items stay at full category baseline
        Viewed is tracked in JS but not shown on the wheel.
        ------------------------------------------------------------------ */
 
-    .wheel-target-hit:focus-visible,
-    .wheel-target-hit:hover {
-      border-color: rgba(59, 130, 246, 0.75);
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.35);
+    .wheel-target:not(.is-recommended) .wheel-target-hit:focus-visible,
+    .wheel-target:not(.is-recommended) .wheel-target-hit:hover {
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.38);
     }
 
-    /* Filtered out — de-emphasize only; no styling on matches. */
+    .wheel-target.is-recommended .wheel-target-hit:focus-visible,
+    .wheel-target.is-recommended .wheel-target-hit:hover {
+      outline: 2px solid rgba(59, 130, 246, 0.8);
+      outline-offset: 5px;
+    }
+
+    /* Filtered out — stronger de-emphasis; no extra styling on in-filter matches. */
     .wheel-target.is-dimmed {
-      opacity: 0.38;
-      filter: saturate(0.55);
+      opacity: 0.24;
+      filter: saturate(0.28) brightness(0.9);
     }
 
-    /* Recommended inside the active filter (or with no filter) — full green ring. */
+    /* Recommended — heavy ring/glow layered over category fill and border. */
     .wheel-target.is-recommended:not(.is-dimmed) .wheel-target-hit {
-      border-color: var(--airmf-foundations);
       box-shadow:
-        0 0 0 3px rgba(139, 195, 74, 0.5),
-        0 0 16px rgba(139, 195, 74, 0.28);
+        0 0 0 2px var(--airmf-foundations),
+        0 0 0 5px rgba(139, 195, 74, 0.52),
+        0 0 18px rgba(139, 195, 74, 0.42),
+        0 0 34px rgba(124, 179, 66, 0.26);
     }
 
-    /* Recommended but outside the active filter — discoverable, still subdued. */
+    /* Recommended but filtered out — faint recommendation halo, still clearly dimmed. */
     .wheel-target.is-recommended.is-dimmed .wheel-target-hit {
-      border-color: rgba(124, 179, 66, 0.5);
-      box-shadow: 0 0 0 2px rgba(139, 195, 74, 0.22);
+      box-shadow:
+        0 0 0 1px rgba(124, 179, 66, 0.32),
+        0 0 10px rgba(139, 195, 74, 0.14);
     }
 
     /* Debug alignment mode — toggle SHOW_HOTSPOT_DEBUG in JS. */
@@ -1678,109 +1791,323 @@
       border: none;
     }
 
-    /* AI Focus Map: 3-column body — starred capabilities, contact
-       placeholder, and the QR takeaway sit side-by-side so the whole
-       synthesis surface fits one kiosk screen. */
+    /* AI Focus Map: light two-column body — QR or wheel left, contact cards
+       right. Fits one kiosk screen; card area scrolls only when 7+ selections. */
+    #view-focus {
+      overflow: hidden;
+      background: var(--airmf-surface-light);
+      color: var(--airmf-navy);
+      --focus-pad-inline: clamp(1.5rem, 2.8cqw, 2.5rem);
+    }
+
+    #view-focus.is-active {
+      overflow: hidden;
+    }
+
+    #view-focus .app-header {
+      background: var(--airmf-surface-light);
+      border-bottom: 1px solid #d1d5db;
+      padding: clamp(1rem, 1.8cqh, 1.35rem) var(--focus-pad-inline) clamp(0.75rem, 1.2cqh, 1rem);
+      align-items: flex-start;
+    }
+
+    #view-focus .app-header h1 {
+      color: var(--airmf-navy);
+      font-size: clamp(1.65rem, 2.8cqh, 2.15rem);
+      line-height: 1.12;
+      letter-spacing: -0.02em;
+    }
+
+    #view-focus .page-subtitle {
+      color: #64748b;
+      font-size: clamp(0.88rem, 1.35cqh, 1rem);
+      line-height: 1.45;
+      max-width: 54rem;
+    }
+
+    #view-focus .view-body {
+      overflow: hidden;
+      padding: clamp(0.75rem, 1.4cqh, 1.1rem) var(--focus-pad-inline) clamp(0.5rem, 0.9cqh, 0.75rem);
+      flex: 1 1 0;
+      min-height: 0;
+      gap: 0.55rem;
+    }
+
+    #view-focus .view-footer {
+      background: var(--airmf-surface-light);
+      border-top: 1px solid #d1d5db;
+      padding: 0.65rem var(--focus-pad-inline) 0.85rem;
+    }
+
+    #view-focus .btn-ghost {
+      background: var(--airmf-panel);
+      color: var(--airmf-navy);
+      border: 1px solid #cbd5e1;
+    }
+
     .focus-body {
-      gap: 1rem;
-    }
-
-    .focus-page-lede {
-      margin: 0;
-      color: #cbd5e1;
-      font-size: 0.95rem;
-      line-height: 1.4;
-    }
-
-    .focus-page-lede[hidden] {
-      display: none;
+      gap: 0;
+      flex: 1 1 0;
+      min-height: 0;
     }
 
     .focus-columns {
-      flex: 1 1 auto;
+      flex: 1 1 0;
       min-height: 0;
       display: grid;
-      gap: 1.4rem;
-      grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.95fr) minmax(0, 0.9fr);
+      gap: 0;
+      grid-template-columns: minmax(0, 0.88fr) minmax(0, 2.12fr);
       align-items: stretch;
     }
 
     .focus-col {
       display: flex;
       flex-direction: column;
-      gap: 0.7rem;
-      padding: 1.25rem 1.3rem 1.3rem;
-      background: #16202d;
-      border: 1px solid #2a3441;
-      border-radius: 0.85rem;
       min-height: 0;
       overflow: hidden;
     }
 
-    .focus-col-content {
-      overflow: hidden;
+    .focus-col-visual {
+      padding-right: clamp(1rem, 2cqw, 1.75rem);
+      margin-right: clamp(1rem, 2cqw, 1.75rem);
+      border-right: 1px solid #d1d5db;
     }
 
-    .focus-col-content #focus-content-host {
-      flex: 1 1 auto;
-      min-height: 0;
-      overflow: auto;
+    .focus-col-cards {
+      min-width: 0;
+    }
+
+    .focus-visual-panel {
+      flex: 1 1 0;
       display: flex;
       flex-direction: column;
-      gap: 0.7rem;
+      align-items: center;
+      justify-content: center;
+      gap: clamp(0.65rem, 1.2cqh, 0.95rem);
+      min-height: 0;
+      width: 100%;
+      padding: 0.25rem 0;
     }
 
-    .focus-col-takeaway {
-      align-items: flex-start;
+    .focus-visual-panel[hidden] {
+      display: none;
     }
 
-    @media (max-width: 1100px) {
-      .focus-columns {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    .focus-section-heading {
+    .focus-visual-lede {
       margin: 0;
-      font-size: 1.15rem;
-      font-weight: 650;
-      letter-spacing: -0.01em;
-      color: #f1f5f9;
-    }
-
-    .focus-section-lede {
-      margin: 0;
-      color: #94a3b8;
-      font-size: 0.88rem;
+      max-width: 16rem;
+      text-align: center;
+      color: #64748b;
+      font-size: clamp(0.82rem, 1.2cqh, 0.92rem);
       line-height: 1.4;
     }
 
-    .focus-list {
-      list-style: none;
-      margin: 0;
-      padding: 0;
+    .focus-wheel-image {
+      display: block;
+      width: min(100%, 26cqw);
+      max-height: min(68cqh, 100%);
+      height: auto;
+      object-fit: contain;
+      user-select: none;
+      pointer-events: none;
+    }
+
+    .focus-qr-mount {
+      display: block;
+      width: min(100%, 22cqw);
+      max-width: 100%;
+      padding: clamp(0.55rem, 1cqh, 0.75rem);
+      background: #fff;
+      border-radius: 0.65rem;
+      line-height: 0;
+      box-shadow: 0 1px 4px rgba(15, 39, 68, 0.08);
+    }
+
+    .focus-qr-mount img,
+    .focus-qr-mount canvas {
+      display: block;
+      width: 100% !important;
+      height: auto !important;
+    }
+
+    .focus-cards-scroll {
+      flex: 1 1 0;
+      min-height: 0;
+      overflow: hidden;
       display: flex;
       flex-direction: column;
+    }
+
+    .focus-cards-scroll.is-scrollable {
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      padding-right: 0.25rem;
+    }
+
+    .focus-cards-grid {
+      display: grid;
+      gap: clamp(0.65rem, 1.1cqh, 0.9rem);
+      width: 100%;
+      align-content: start;
+    }
+
+    .focus-contact-card {
+      display: flex;
+      flex-direction: column;
+      min-height: clamp(9.5rem, 16cqh, 11.5rem);
+      padding: clamp(0.75rem, 1.2cqh, 0.95rem) clamp(0.85rem, 1.3cqw, 1rem);
+      background: var(--airmf-panel);
+      border: 2px solid #cbd5e1;
+      border-radius: 0.55rem;
+      box-shadow: 0 1px 3px rgba(15, 39, 68, 0.06);
+    }
+
+    .focus-contact-card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
       gap: 0.65rem;
+      margin-bottom: clamp(0.55rem, 1cqh, 0.75rem);
+      padding-bottom: clamp(0.45rem, 0.85cqh, 0.6rem);
+      border-bottom: 1px solid #e2e8f0;
     }
 
-    .focus-item {
-      padding: 0.85rem 1rem;
-      background: #1a2332;
-      border-radius: 0.7rem;
-      border: 1px solid #2a3441;
-    }
-
-    .focus-item h3 {
-      margin: 0 0 0.25rem;
-      font-size: 1rem;
-    }
-
-    .focus-item p {
+    .focus-contact-card-title {
       margin: 0;
-      color: #94a3b8;
-      font-size: 0.85rem;
+      font-size: clamp(0.95rem, 1.45cqh, 1.08rem);
+      font-weight: 700;
+      line-height: 1.25;
+      color: var(--airmf-navy);
+      letter-spacing: -0.01em;
+    }
+
+    .focus-contact-card-icon {
+      flex-shrink: 0;
+      width: clamp(2rem, 3.2cqh, 2.35rem);
+      height: clamp(2rem, 3.2cqh, 2.35rem);
+      border-radius: 0.35rem;
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+    }
+
+    .focus-contact-card-body {
+      display: flex;
+      align-items: flex-start;
+      gap: clamp(0.55rem, 1cqw, 0.75rem);
+      margin-top: auto;
+    }
+
+    .focus-contact-card-avatar {
+      flex-shrink: 0;
+      width: clamp(2.35rem, 3.8cqh, 2.75rem);
+      height: clamp(2.35rem, 3.8cqh, 2.75rem);
+      border-radius: 50%;
+      background: #e2e8f0;
+    }
+
+    .focus-contact-card-details {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+      min-width: 0;
+    }
+
+    .focus-contact-card-role {
+      display: inline-block;
+      align-self: flex-start;
+      padding: 0.12rem 0.45rem;
+      font-size: clamp(0.62rem, 0.95cqh, 0.72rem);
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      border-radius: 0.2rem;
       line-height: 1.35;
+    }
+
+    .focus-contact-card-name {
+      margin: 0.15rem 0 0;
+      font-size: clamp(0.88rem, 1.25cqh, 0.95rem);
+      font-weight: 700;
+      color: var(--airmf-navy);
+      line-height: 1.3;
+    }
+
+    .focus-contact-card-email {
+      margin: 0;
+      font-size: clamp(0.78rem, 1.1cqh, 0.85rem);
+      line-height: 1.35;
+    }
+
+    .focus-contact-card[data-domain="foundations"] {
+      border-color: var(--airmf-foundations);
+    }
+
+    .focus-contact-card[data-domain="foundations"] .focus-contact-card-icon {
+      border-color: rgba(124, 179, 66, 0.35);
+      background: var(--airmf-foundations-soft);
+    }
+
+    .focus-contact-card[data-domain="foundations"] .focus-contact-card-role {
+      background: var(--airmf-foundations-soft);
+      color: #558b2f;
+    }
+
+    .focus-contact-card[data-domain="foundations"] .focus-contact-card-email {
+      color: #558b2f;
+    }
+
+    .focus-contact-card[data-domain="development"] {
+      border-color: var(--airmf-development);
+    }
+
+    .focus-contact-card[data-domain="development"] .focus-contact-card-icon {
+      border-color: rgba(38, 166, 154, 0.35);
+      background: var(--airmf-development-soft);
+    }
+
+    .focus-contact-card[data-domain="development"] .focus-contact-card-role {
+      background: var(--airmf-development-soft);
+      color: #00796b;
+    }
+
+    .focus-contact-card[data-domain="development"] .focus-contact-card-email {
+      color: #00796b;
+    }
+
+    .focus-contact-card[data-domain="adoption"] {
+      border-color: var(--airmf-adoption);
+    }
+
+    .focus-contact-card[data-domain="adoption"] .focus-contact-card-icon {
+      border-color: rgba(66, 165, 245, 0.35);
+      background: var(--airmf-adoption-soft);
+    }
+
+    .focus-contact-card[data-domain="adoption"] .focus-contact-card-role {
+      background: var(--airmf-adoption-soft);
+      color: #1565c0;
+    }
+
+    .focus-contact-card[data-domain="adoption"] .focus-contact-card-email {
+      color: #1565c0;
+    }
+
+    @container app-stage (max-width: 1100px) {
+      .focus-columns {
+        grid-template-columns: 1fr;
+      }
+
+      .focus-col-visual {
+        padding-right: 0;
+        margin-right: 0;
+        border-right: none;
+        border-bottom: 1px solid #d1d5db;
+        padding-bottom: 1rem;
+        margin-bottom: 1rem;
+      }
+
+      .focus-cards-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      }
     }
 
     .empty-state {
@@ -1798,6 +2125,16 @@
       color: #e8ecf1;
       font-size: 1.05rem;
       margin-bottom: 0.4rem;
+    }
+
+    #view-focus .empty-state {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+      color: #64748b;
+    }
+
+    #view-focus .empty-state strong {
+      color: var(--airmf-navy);
     }
 
     /* Kiosk session id chip — rendered inside the header as a tiny meta
@@ -1823,118 +2160,8 @@
       font-variant-numeric: tabular-nums;
     }
 
-    /* Takeaway column — QR + URL + copy action stacked. The .continue-later
-       wrapper no longer needs the top border/padding from the old vertical
-       stack layout; the column treatment supplies its own visual frame. */
-    .continue-later {
-      margin: 0;
-      padding: 0;
-      border: none;
-    }
-
-    .continue-later-lede {
-      margin: 0;
-      color: #94a3b8;
-      font-size: 0.88rem;
-      line-height: 1.4;
-    }
-
-    /* Contact Information: visual-only placeholder. The column treatment
-       (.focus-col) supplies the frame, so no extra top border/padding. */
-    .contact-section {
-      margin: 0;
-      padding: 0;
-      border: none;
-    }
-
-    .placeholder-note {
-      margin: 0;
-      font-size: 0.8rem;
-      color: #94a3b8;
-      font-style: italic;
-    }
-
-    .contact-form-placeholder {
-      display: flex;
-      flex-direction: column;
-      gap: 0.55rem;
-    }
-
-    .placeholder-field {
-      display: flex;
-      flex-direction: column;
-      gap: 0.25rem;
-      opacity: 0.7;
-    }
-
-    .placeholder-field-label {
-      font-size: 0.68rem;
-      font-weight: 700;
-      color: #94a3b8;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-    }
-
-    .placeholder-field input {
-      font-family: var(--font-sans);
-      font-size: 0.9rem;
-      padding: 0.55rem 0.7rem;
-      background: #131c29;
-      color: #94a3b8;
-      border: 1px dashed #334155;
-      border-radius: 0.5rem;
-      cursor: not-allowed;
-    }
-
-    .placeholder-field input::placeholder {
-      color: #475569;
-    }
-
-    .focus-qr-mount {
-      display: inline-block;
-      padding: 0.6rem;
-      background: #fff;
-      border-radius: 0.65rem;
-      line-height: 0;
-      align-self: flex-start;
-    }
-
-    .focus-qr-mount img {
-      display: block;
-      width: 224px;
-      height: 224px;
-    }
-
-    .qr-actions {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      flex-wrap: wrap;
-    }
-
-    .btn-copy {
-      min-height: 2.25rem;
-      padding: 0 0.85rem;
-      font-size: 0.85rem;
-    }
-
-    .btn-copy.is-success {
-      background: #052e1a;
-      border-color: #10b981;
-      color: #6ee7b7;
-    }
-
-    .qr-url-muted {
-      margin: 0.55rem 0 0;
-      font-size: 0.78rem;
-      color: #94a3b8;
-      word-break: break-all;
-      max-width: 100%;
-      font-variant-numeric: tabular-nums;
-    }
-
     /* Technical preview (Focus map): tiny inline disclosure beneath the
-       3-column body, collapsed by default so it never claims primary
+       two-column body, collapsed by default so it never claims primary
        visual real estate on the kiosk. */
     .handoff-dev {
       flex-shrink: 0;
@@ -1949,7 +2176,7 @@
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.1em;
-      color: #94a3b8;
+      color: #64748b;
       list-style: none;
       display: inline-flex;
       align-items: center;
@@ -1997,9 +2224,9 @@
       font-variant-numeric: tabular-nums;
       font-size: 0.7rem;
       line-height: 1.35;
-      color: #cbd5e1;
-      background: #0c1220;
-      border: 1px solid #334155;
+      color: #475569;
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
       border-radius: 0.55rem;
       white-space: pre-wrap;
       word-break: break-word;
@@ -2027,10 +2254,10 @@
     .modal-content {
       position: relative;
       width: 100%;
-      max-width: min(92%, 78rem);
-      height: min(72cqh, calc(100% - 2rem));
-      min-height: min(72cqh, calc(100% - 2rem));
-      max-height: min(72cqh, calc(100% - 2rem));
+      max-width: min(94%, 82rem);
+      height: auto;
+      max-height: min(88cqh, calc(100% - 1.25rem));
+      min-height: 0;
       display: flex;
       flex-direction: column;
       padding: 0;
@@ -2049,8 +2276,8 @@
       display: flex;
       align-items: flex-start;
       justify-content: space-between;
-      gap: 1rem;
-      padding: clamp(0.65rem, 1.2cqh, 0.85rem) clamp(1rem, 1.8cqw, 1.35rem) 0;
+      gap: 0.75rem;
+      padding: clamp(0.45rem, 0.85cqh, 0.6rem) clamp(0.85rem, 1.5cqw, 1.15rem) 0;
       min-height: 0;
     }
 
@@ -2104,11 +2331,29 @@
     }
 
     .modal-body {
-      padding: 0 clamp(1rem, 1.8cqw, 1.35rem) clamp(0.85rem, 1.5cqh, 1.1rem);
-      overflow-y: auto;
-      flex: 1 1 0;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      justify-content: flex-start;
+      padding: 0 clamp(0.85rem, 1.5cqw, 1.15rem) clamp(0.45rem, 0.8cqh, 0.6rem);
+      overflow: hidden;
+      flex: 0 0 auto;
       min-height: 0;
+    }
+
+    .modal-content[data-modal-view="work-area"] {
+      height: min(88cqh, calc(100% - 1.25rem));
+    }
+
+    .modal-content[data-modal-view="work-area"] .modal-body {
+      flex: 1 1 0;
+      overflow-y: auto;
       -webkit-overflow-scrolling: touch;
+    }
+
+    #modal-overview-host {
+      flex: 0 0 auto;
+      overflow: hidden;
     }
 
     .modal-back-overview {
@@ -2162,10 +2407,10 @@
 
     .modal-overview {
       display: grid;
-      grid-template-columns: minmax(9.5rem, 30%) minmax(0, 1fr);
-      gap: clamp(0.85rem, 1.5cqw, 1.25rem);
-      align-items: stretch;
-      padding-bottom: clamp(0.65rem, 1.2cqh, 0.9rem);
+      grid-template-columns: minmax(8rem, 26%) minmax(0, 1fr);
+      gap: clamp(0.65rem, 1.2cqw, 0.95rem);
+      align-items: start;
+      padding-bottom: 0;
       transform: translateY(0);
       transition:
         grid-template-columns var(--modal-view-duration) var(--modal-view-ease),
@@ -2192,13 +2437,15 @@
       }
 
       .modal-overview-art {
-        min-height: 6rem;
+        min-height: 6.5rem;
+        max-height: 9.5rem;
       }
     }
 
     .modal-overview-art {
-      min-height: clamp(10rem, 22cqh, 15rem);
-      max-height: 24rem;
+      height: clamp(7rem, 14.5cqh, 10.25rem);
+      min-height: clamp(7rem, 14.5cqh, 10.25rem);
+      max-height: clamp(7.5rem, 15.5cqh, 11rem);
       background: linear-gradient(145deg, #f8fafc 0%, #e2e8f0 100%);
       border: 1px solid #e2e8f0;
       border-radius: 0.35rem;
@@ -2206,6 +2453,7 @@
       transform: translateY(0);
       overflow: hidden;
       transition:
+        height var(--modal-view-duration) var(--modal-view-ease),
         min-height var(--modal-view-duration) var(--modal-view-ease),
         max-height var(--modal-view-duration) var(--modal-view-ease),
         opacity var(--modal-view-duration) var(--modal-view-ease),
@@ -2218,7 +2466,8 @@
       display: block;
       width: 100%;
       height: 100%;
-      min-height: clamp(10rem, 22cqh, 15rem);
+      min-height: 0;
+      max-height: 100%;
       object-fit: contain;
       object-position: center;
     }
@@ -2236,7 +2485,7 @@
     .modal-overview-main {
       display: flex;
       flex-direction: column;
-      gap: 0.45rem;
+      gap: 0.28rem;
       min-width: 0;
       min-height: 0;
     }
@@ -2253,8 +2502,8 @@
     }
 
     .modal-overview-bullets-heading {
-      margin: 0.2rem 0 0;
-      font-size: clamp(0.74rem, 1.05cqh, 0.82rem);
+      margin: 0.1rem 0 0;
+      font-size: clamp(0.7rem, 1cqh, 0.78rem);
       font-weight: 650;
       color: #334155;
       max-height: 3rem;
@@ -2269,9 +2518,9 @@
     }
 
     .modal-overview-closing {
-      margin: 0.15rem 0 0;
-      font-size: clamp(0.74rem, 1.05cqh, 0.82rem);
-      line-height: 1.4;
+      margin: 0.08rem 0 0;
+      font-size: clamp(0.7rem, 1cqh, 0.78rem);
+      line-height: 1.35;
       color: #475569;
       max-height: 8rem;
       opacity: 1;
@@ -2286,11 +2535,11 @@
 
     .modal-title {
       margin: 0;
-      font-size: clamp(1.15rem, 2cqh, 1.45rem);
+      font-size: clamp(1.05rem, 1.75cqh, 1.28rem);
       font-weight: 700;
       letter-spacing: -0.01em;
       color: var(--airmf-navy);
-      line-height: 1.2;
+      line-height: 1.18;
       transition: font-size var(--modal-view-duration) var(--modal-view-ease);
     }
 
@@ -2314,8 +2563,8 @@
 
     .modal-overview-lede {
       margin: 0;
-      font-size: clamp(0.78rem, 1.15cqh, 0.88rem);
-      line-height: 1.45;
+      font-size: clamp(0.72rem, 1.05cqh, 0.82rem);
+      line-height: 1.35;
       color: #334155;
       max-height: 12rem;
       opacity: 1;
@@ -2329,10 +2578,10 @@
     }
 
     .modal-overview-bullets {
-      margin: 0.1rem 0 0;
-      padding-left: 1.1rem;
-      font-size: clamp(0.74rem, 1.05cqh, 0.82rem);
-      line-height: 1.4;
+      margin: 0.05rem 0 0;
+      padding-left: 1rem;
+      font-size: clamp(0.7rem, 1cqh, 0.78rem);
+      line-height: 1.35;
       color: #475569;
       max-height: 14rem;
       opacity: 1;
@@ -2347,7 +2596,7 @@
     }
 
     .modal-overview-bullets li {
-      margin-bottom: 0.2rem;
+      margin-bottom: 0.12rem;
     }
 
     .modal-overview-bullets li:last-child {
@@ -2359,10 +2608,11 @@
       align-items: center;
       justify-content: center;
       width: 100%;
-      margin-top: clamp(0.35rem, 0.65cqh, 0.55rem);
-      padding: clamp(0.55rem, 1cqh, 0.7rem) 0.75rem;
+      margin-top: clamp(0.2rem, 0.4cqh, 0.35rem);
+      padding: clamp(0.45rem, 0.8cqh, 0.55rem) 0.65rem;
+      min-height: 2.65rem;
       font-family: var(--font-sans);
-      font-size: clamp(0.72rem, 1cqh, 0.8rem);
+      font-size: clamp(0.7rem, 0.95cqh, 0.78rem);
       font-weight: 650;
       color: #64748b;
       text-align: center;
@@ -2397,52 +2647,52 @@
     }
 
     .modal-divider {
-      margin: 0 0 clamp(0.55rem, 1cqh, 0.75rem);
+      flex-shrink: 0;
+      margin: clamp(0.45rem, 0.8cqh, 0.6rem) 0 clamp(0.4rem, 0.7cqh, 0.5rem);
       border: none;
       border-top: 1px solid #e2e8f0;
       transition: margin var(--modal-view-duration) var(--modal-view-ease);
     }
 
     .modal-content[data-modal-view="work-area"] .modal-divider {
-      margin-bottom: clamp(0.35rem, 0.65cqh, 0.5rem);
+      margin: clamp(0.28rem, 0.5cqh, 0.38rem) 0;
     }
 
     .modal-work-area-nav {
-      position: sticky;
-      top: 0;
-      z-index: 2;
-      margin: 0 0 clamp(0.65rem, 1.1cqh, 0.85rem);
-      padding: 0.35rem 0 0.5rem;
+      flex-shrink: 0;
+      margin: 0;
+      padding: 0;
       background: var(--airmf-panel);
-      border-bottom: 1px solid #f1f5f9;
+      border-bottom: none;
       transition: margin var(--modal-view-duration) var(--modal-view-ease);
     }
 
     .modal-content[data-modal-view="work-area"] .modal-work-area-nav {
-      margin-bottom: clamp(0.45rem, 0.8cqh, 0.6rem);
+      margin-bottom: clamp(0.3rem, 0.55cqh, 0.4rem);
     }
 
     .modal-work-tabs {
       display: flex;
-      gap: clamp(0.35rem, 0.65cqw, 0.5rem);
+      gap: clamp(0.3rem, 0.55cqw, 0.42rem);
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
-      padding-bottom: 0.15rem;
+      padding-bottom: 0.05rem;
     }
 
     .modal-work-tab {
       display: flex;
       align-items: center;
-      gap: 0.45rem;
+      gap: 0.38rem;
       flex: 1 1 0;
-      min-width: min(11rem, 42cqw);
-      max-width: 14rem;
-      padding: 0.5rem 0.55rem;
+      min-width: min(9.5rem, 38cqw);
+      max-width: 13rem;
+      min-height: 2.65rem;
+      padding: 0.42rem 0.48rem;
       text-align: left;
       font-family: var(--font-sans);
-      font-size: clamp(0.62rem, 0.95cqh, 0.72rem);
+      font-size: clamp(0.62rem, 0.92cqh, 0.7rem);
       font-weight: 600;
-      line-height: 1.25;
+      line-height: 1.2;
       color: #64748b;
       background: var(--airmf-panel);
       border: 1px solid #d1d5db;
@@ -2482,6 +2732,7 @@
     }
 
     .modal-work-details {
+      flex-shrink: 0;
       min-height: 0;
       overflow: hidden;
       max-height: 0;
@@ -2494,7 +2745,8 @@
     }
 
     .modal-content[data-modal-view="work-area"] .modal-work-details:not(:empty) {
-      max-height: 200rem;
+      flex: 0 0 auto;
+      max-height: none;
       opacity: 1;
       transform: translateY(0);
     }
@@ -2526,25 +2778,25 @@
     }
 
     .modal-work-detail-title {
-      margin: 0 0 0.25rem;
+      margin: 0 0 0.18rem;
       font-family: var(--font-serif);
-      font-size: clamp(1rem, 1.6cqh, 1.15rem);
+      font-size: clamp(0.92rem, 1.4cqh, 1.05rem);
       font-weight: 700;
       color: var(--airmf-navy);
-      line-height: 1.25;
+      line-height: 1.22;
     }
 
     .modal-work-detail-subtitle {
-      margin: 0 0 0.75rem;
-      font-size: clamp(0.78rem, 1.1cqh, 0.88rem);
-      line-height: 1.4;
+      margin: 0 0 0.45rem;
+      font-size: clamp(0.72rem, 1.02cqh, 0.82rem);
+      line-height: 1.35;
       color: #475569;
     }
 
     .modal-work-panels {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: clamp(0.55rem, 1cqw, 0.75rem);
+      gap: clamp(0.42rem, 0.8cqw, 0.58rem);
     }
 
     @container app-stage (max-width: 768px) {
@@ -2554,30 +2806,30 @@
     }
 
     .modal-work-panel {
-      padding: clamp(0.65rem, 1.1cqh, 0.85rem) clamp(0.7rem, 1.1cqw, 0.9rem);
+      padding: clamp(0.5rem, 0.85cqh, 0.65rem) clamp(0.6rem, 0.95cqw, 0.75rem);
       background: var(--airmf-foundations-soft);
       border: 1px solid #dcedc8;
       border-radius: 0.35rem;
     }
 
     .modal-work-panel-heading {
-      margin: 0 0 0.45rem;
-      font-size: clamp(0.72rem, 1.05cqh, 0.8rem);
+      margin: 0 0 0.32rem;
+      font-size: clamp(0.68rem, 0.98cqh, 0.76rem);
       font-weight: 700;
       color: var(--airmf-navy);
-      line-height: 1.3;
+      line-height: 1.28;
     }
 
     .modal-work-panel-list {
       margin: 0;
-      padding-left: 1rem;
-      font-size: clamp(0.68rem, 1cqh, 0.76rem);
-      line-height: 1.4;
+      padding-left: 0.9rem;
+      font-size: clamp(0.66rem, 0.95cqh, 0.74rem);
+      line-height: 1.35;
       color: #334155;
     }
 
     .modal-work-panel-list li {
-      margin-bottom: 0.25rem;
+      margin-bottom: 0.15rem;
     }
 
     .modal-work-panel-list li:last-child {
@@ -2586,13 +2838,13 @@
 
     .modal-footer {
       flex-shrink: 0;
-      padding: 0.75rem clamp(1rem, 1.8cqw, 1.35rem) 0.9rem;
+      padding: 0.55rem clamp(0.85rem, 1.5cqw, 1.15rem) 0.65rem;
       border-top: 1px solid #e2e8f0;
       background: #f8fafc;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 1rem;
+      gap: 0.75rem;
       flex-wrap: wrap;
     }
 
@@ -3468,6 +3720,17 @@
                 decoding="async"
               />
             </div>
+            <button
+              type="button"
+              id="btn-wheel-focus-hub"
+              class="wheel-focus-hub"
+              disabled
+              aria-disabled="true"
+              aria-label="AI Focus Map. Select capabilities to continue."
+            >
+              <span class="wheel-focus-hub-title">AI Focus Map</span>
+              <span class="wheel-focus-hub-count" id="wheel-focus-hub-count">Select capabilities</span>
+            </button>
             <div id="explore-card-host" class="wheel-targets" role="group" aria-label="aiRMF capabilities"></div>
           </div>
         </div>
@@ -3486,48 +3749,37 @@
     </footer>
   </div>
 
-  <!-- AI Focus Map: synthesis screen. 3-column body (starred capabilities |
-       contact placeholder | QR takeaway) fits one screen; navigation lives
-       in the bottom footer. -->
+  <!-- AI Focus Map: two-column synthesis — wheel/QR left, contact cards right. -->
   <div id="view-focus" class="view" aria-hidden="true">
-    <header class="app-header">
-      <h1>AI Focus Map</h1>
+    <header class="app-header focus-header">
+      <div class="app-header-titles">
+        <h1>Your AI Capability Focus Map</h1>
+        <p class="page-subtitle focus-header-subtitle">
+          Interested in exploring how the capabilities you selected apply to your organization? Connect with our lead practitioners to continue the conversation.
+        </p>
+      </div>
       <span class="focus-session-panel header-meta" id="focus-session-display" role="status" aria-live="polite"></span>
     </header>
     <div class="view-body focus-body">
-      <p class="focus-page-lede" id="focus-page-lede" hidden>
-        Capabilities you selected to carry forward.
-      </p>
       <div class="focus-columns">
-        <section class="focus-col focus-col-content" aria-label="Starred capabilities">
-          <div id="focus-content-host"></div>
-        </section>
-        <section class="focus-col focus-col-contact contact-section" aria-labelledby="contact-heading">
-          <h2 class="focus-section-heading" id="contact-heading">Contact Information</h2>
-          <p class="placeholder-note">Placeholder — fields are disabled.</p>
-          <div class="contact-form-placeholder" aria-hidden="true">
-            <label class="placeholder-field">
-              <span class="placeholder-field-label">Name</span>
-              <input type="text" disabled placeholder="Visitor name" />
-            </label>
-            <label class="placeholder-field">
-              <span class="placeholder-field-label">Organization</span>
-              <input type="text" disabled placeholder="Company or team" />
-            </label>
-            <label class="placeholder-field">
-              <span class="placeholder-field-label">Email</span>
-              <input type="email" disabled placeholder="name@example.com" />
-            </label>
+        <section class="focus-col focus-col-visual" aria-label="Focus map visualization">
+          <div id="focus-qr-panel" class="focus-visual-panel" hidden>
+            <div id="focus-qr-mount" class="focus-qr-mount" role="img" aria-label="QR code for stateless focus URL"></div>
+            <p class="focus-visual-lede">Scan to continue this conversation outside the Grid Room kiosk.</p>
+          </div>
+          <div id="focus-wheel-panel" class="focus-visual-panel">
+            <img
+              src="assets/airmf-wheel.png"
+              alt="aiRMF capability wheel"
+              class="focus-wheel-image"
+              decoding="async"
+            />
           </div>
         </section>
-        <section class="focus-col focus-col-takeaway continue-later" id="focus-continue-section" aria-labelledby="continue-later-heading">
-          <h2 class="focus-section-heading" id="continue-later-heading">Takeaway</h2>
-          <p class="continue-later-lede">Scan to open this AI Focus Map outside the Grid Room.</p>
-          <div id="focus-qr-mount" class="focus-qr-mount" role="img" aria-label="QR code for stateless focus URL"></div>
-          <div class="qr-actions">
-            <button type="button" id="btn-copy-url" class="btn btn-ghost btn-copy" aria-live="polite">Copy URL</button>
+        <section class="focus-col focus-col-cards" aria-label="Lead practitioner contacts">
+          <div id="focus-cards-scroll" class="focus-cards-scroll">
+            <div id="focus-cards-host" class="focus-cards-grid" role="list"></div>
           </div>
-          <p id="focus-qr-url-text" class="qr-url-muted"></p>
         </section>
       </div>
       <details class="handoff-dev" id="focus-handoff-section">
@@ -3535,7 +3787,7 @@
         <pre id="focus-handoff-pre" class="handoff-pre" aria-label="Stateless URL parameter preview"></pre>
       </details>
     </div>
-    <footer class="view-footer" aria-label="AI Focus Map actions">
+    <footer class="view-footer focus-footer" aria-label="AI Focus Map actions">
       <button type="button" class="btn btn-ghost btn-large" id="btn-back-explore">
         Back to Capability Map
       </button>
@@ -3695,15 +3947,18 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
       });
     }
 
-    /** Syncs muted URL text + QR image to the current stateless focus URL. */
+    /** Syncs QR image to the current stateless focus URL and toggles QR vs wheel. */
     function refreshFocusQrDisplay() {
       var url = buildStatelessFocusUrl();
-      var urlEl = document.getElementById("focus-qr-url-text");
       var mountEl = document.getElementById("focus-qr-mount");
-      if (urlEl) {
-        urlEl.textContent = url;
-      }
-      if (mountEl) {
+      var qrPanel = document.getElementById("focus-qr-panel");
+      var wheelPanel = document.getElementById("focus-wheel-panel");
+      var hasQr = selectedCapabilities.length > 0;
+
+      if (qrPanel) qrPanel.hidden = !hasQr;
+      if (wheelPanel) wheelPanel.hidden = hasQr;
+
+      if (mountEl && hasQr) {
         mountQrCodeWithLibrary(mountEl, url);
       }
     }
@@ -4979,6 +5234,26 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
         btn.setAttribute("aria-disabled", n === 0 ? "true" : "false");
         btn.title = n === 0 ? "Star at least one capability to view the AI Focus Map." : "";
       });
+
+      var hub = document.getElementById("btn-wheel-focus-hub");
+      var hubCount = document.getElementById("wheel-focus-hub-count");
+      if (hub) {
+        hub.disabled = n === 0;
+        hub.setAttribute("aria-disabled", n === 0 ? "true" : "false");
+        hub.classList.toggle("is-active", n > 0);
+        hub.title = n === 0 ? "Star at least one capability to view the AI Focus Map." : "";
+        if (hubCount) {
+          hubCount.textContent =
+            n === 0 ? "Select capabilities" : n + " selected";
+        }
+        hub.setAttribute(
+          "aria-label",
+          n === 0
+            ? "AI Focus Map. Select capabilities to continue."
+            : "AI Focus Map. " + n + " " + (n === 1 ? "capability" : "capabilities") + " selected. Open focus map."
+        );
+      }
+
       getClearButtons().forEach(function (btn) {
         btn.hidden = n === 0;
       });
@@ -5188,16 +5463,70 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
       }
     }
 
+    function buildFocusContactCard(cap) {
+      var card = document.createElement("article");
+      card.className = "focus-contact-card";
+      card.setAttribute("role", "listitem");
+      card.dataset.domain = cap.category;
+
+      var header = document.createElement("div");
+      header.className = "focus-contact-card-header";
+
+      var title = document.createElement("h3");
+      title.className = "focus-contact-card-title";
+      title.textContent = cap.title;
+      header.appendChild(title);
+
+      var icon = document.createElement("span");
+      icon.className = "focus-contact-card-icon";
+      icon.setAttribute("aria-hidden", "true");
+      header.appendChild(icon);
+
+      card.appendChild(header);
+
+      var body = document.createElement("div");
+      body.className = "focus-contact-card-body";
+
+      var avatar = document.createElement("span");
+      avatar.className = "focus-contact-card-avatar";
+      avatar.setAttribute("aria-hidden", "true");
+      body.appendChild(avatar);
+
+      var details = document.createElement("div");
+      details.className = "focus-contact-card-details";
+
+      var roleBadge = document.createElement("span");
+      roleBadge.className = "focus-contact-card-role";
+      roleBadge.textContent = "AI Transformation Lead";
+      details.appendChild(roleBadge);
+
+      var name = document.createElement("p");
+      name.className = "focus-contact-card-name";
+      name.textContent = "Lead Practitioner";
+      details.appendChild(name);
+
+      var email = document.createElement("p");
+      email.className = "focus-contact-card-email";
+      email.textContent = "contact@example.com";
+      details.appendChild(email);
+
+      body.appendChild(details);
+      card.appendChild(body);
+
+      return card;
+    }
+
     function renderFocusMapView() {
-      var host = document.getElementById("focus-content-host");
+      var host = document.getElementById("focus-cards-host");
+      var scrollEl = document.getElementById("focus-cards-scroll");
+      if (!host) return;
       host.innerHTML = "";
+      if (scrollEl) scrollEl.classList.remove("is-scrollable");
 
-      // The page lede frames the Starred Capabilities list; hide it when the
-      // list is empty so the empty-state message stands on its own.
-      var pageLede = document.getElementById("focus-page-lede");
-      if (pageLede) pageLede.hidden = selectedCapabilities.length === 0;
+      var count = selectedCapabilities.length;
 
-      if (selectedCapabilities.length === 0) {
+      if (count === 0) {
+        host.style.gridTemplateColumns = "1fr";
         var empty = document.createElement("div");
         empty.className = "empty-state";
         empty.innerHTML =
@@ -5205,34 +5534,21 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
           "Return to the Capability Map and star the capabilities you want to carry forward.";
         host.appendChild(empty);
       } else {
-        var heading = document.createElement("h2");
-        heading.className = "focus-section-heading";
-        heading.textContent = "Starred Capabilities";
-        host.appendChild(heading);
-
-        var ul = document.createElement("ul");
-        ul.className = "focus-list";
+        if (count <= 3) {
+          host.style.gridTemplateColumns = "repeat(" + count + ", minmax(0, 1fr))";
+        } else {
+          host.style.gridTemplateColumns = "repeat(3, minmax(0, 1fr))";
+        }
+        if (count > 6 && scrollEl) {
+          scrollEl.classList.add("is-scrollable");
+        }
 
         for (var i = 0; i < selectedCapabilities.length; i++) {
           var id = selectedCapabilities[i];
           var cap = capabilityById(id);
           if (!cap) continue;
-
-          var li = document.createElement("li");
-          li.className = "focus-item";
-
-          var h3 = document.createElement("h3");
-          h3.textContent = cap.title;
-          li.appendChild(h3);
-
-          var p = document.createElement("p");
-          p.textContent = cap.description;
-          li.appendChild(p);
-
-          ul.appendChild(li);
+          host.appendChild(buildFocusContactCard(cap));
         }
-
-        host.appendChild(ul);
       }
 
       refreshStatelessParameterPreview();
@@ -5256,14 +5572,14 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
     document.getElementById("btn-confirm-journey").addEventListener("click", confirmJourneyQuestion);
     document.getElementById("btn-skip-journey").addEventListener("click", skipJourneyQuestion);
 
-    // "View AI Focus Map" — same behavior for the header CTA and the sticky
-    // footer twin; both share this guarded handler.
+    // "View AI Focus Map" — wheel hub is primary; header/footer twins share the same handler.
     function handleViewFocusClick() {
       if (selectedCapabilities.length === 0) return;
       showView("focus");
     }
     document.getElementById("btn-to-focus").addEventListener("click", handleViewFocusClick);
     document.getElementById("btn-to-focus-footer").addEventListener("click", handleViewFocusClick);
+    document.getElementById("btn-wheel-focus-hub").addEventListener("click", handleViewFocusClick);
 
     // Capability Map → aiRMF Intro.
     document.getElementById("btn-back-to-intro").addEventListener("click", function () {
@@ -5276,7 +5592,8 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
       showView("explore");
     });
 
-    document.getElementById("btn-copy-url").addEventListener("click", copyStatelessUrlToClipboard);
+    var copyUrlBtn = document.getElementById("btn-copy-url");
+    if (copyUrlBtn) copyUrlBtn.addEventListener("click", copyStatelessUrlToClipboard);
 
     // Both Clear buttons (header + sticky footer twin) share the two-tap
     // confirm handler; their armed text and styling stay in sync via
