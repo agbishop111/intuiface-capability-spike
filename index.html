@@ -30,10 +30,11 @@
       box-sizing: border-box;
     }
 
-    /* Kiosk base: root font scales with the fitted 16:9 stage width so rem-based
-       screens fill the stage at any size. At 3840px-wide stage → 22px. */
+    /* Kiosk-first fixed canvas: typography and layout are authored at 22px on a
+       1920×1080 logical surface. Uniform scale fits 1366×768 → 3840×2160 hosts
+       without responsive reflow. */
     html {
-      font-size: calc(22px * var(--stage-width) / 3840);
+      font-size: 22px;
       font-family: var(--font-sans);
       -webkit-tap-highlight-color: transparent;
     }
@@ -51,18 +52,20 @@
       overflow: hidden;
     }
 
-    /* Shared 16:9 kiosk stage — fills the largest 16:9 rect in the viewport.
-       No transform scaling; views use 100% of the stage. */
+    /* Kiosk-first stage host — letterboxes the scaled 16:9 canvas inside the
+       Intuiface / browser container. Below 1366×768 the stage stops shrinking;
+       the host may crop or scroll rather than reflowing the composition. */
     .app-shell {
       display: flex;
       align-items: center;
       justify-content: center;
       width: 100vw;
       height: 100vh;
-      overflow: hidden;
+      overflow: auto;
       background: #0f1419;
     }
 
+    /* Sized to the scaled canvas footprint (1920×1080 × --stage-scale). */
     .app-stage-scaler {
       position: relative;
       flex: none;
@@ -71,18 +74,23 @@
       height: var(--stage-height);
     }
 
-    /* Stage sizing convention:
-       - .app-shell may use vw/vh because it defines the outer letterboxed stage.
+    /* Fixed 1920×1080 logical design surface — scaled uniformly into the host.
+       Authored for desktop preview and 1080p kiosks; scales 2× on 3840×2160
+       displays. Stage sizing convention:
+       - .app-shell may use vw/vh; it is the outer host only.
        - Inside #app-stage, do not use raw vw/vh/vmin for layout, typography, or
-         touch target sizing. Use rem, %, and app-stage container query units instead.
-       - Use @container app-stage queries instead of viewport @media queries for
-         stage content.
+         touch targets. Use rem, %, and app-stage container query units instead.
+       - Viewport-driven layout reflow is intentionally avoided; composition is
+         fixed like an interactive presentation, not a responsive website.
        - Do not use position: fixed for overlays; use position: absolute inside #app-stage. */
     .app-stage {
       position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
+      top: 0;
+      left: 0;
+      width: 1920px;
+      height: 1080px;
+      transform: scale(var(--stage-scale));
+      transform-origin: top left;
       overflow: hidden;
       container-type: size;
       container-name: app-stage;
@@ -108,10 +116,13 @@
       font-family: var(--font-serif);
     }
 
-    /* aiRMF concept palette */
+    /* aiRMF concept palette + stage scale (1920×1080 logical canvas, 1366×768 floor) */
     :root {
-      --stage-width: min(100vw, calc(100vh * 16 / 9));
-      --stage-height: min(100vh, calc(100vw * 9 / 16));
+      --stage-scale-fit: min(calc(100vw / 1920px), calc(100vh / 1080px));
+      --stage-scale-min: min(calc(1366px / 1920px), calc(768px / 1080px));
+      --stage-scale: max(var(--stage-scale-fit), var(--stage-scale-min));
+      --stage-width: calc(1920px * var(--stage-scale));
+      --stage-height: calc(1080px * var(--stage-scale));
       --font-sans: "Open Sans", sans-serif;
       --font-serif: "STIX Two Text", serif;
       --airmf-navy: #0f2744;
@@ -127,8 +138,8 @@
     }
 
     /* Each view fills the 16:9 app-stage: header (top), body (flex: 1),
-       optional footer (bottom). Inactive views are hidden; the active view
-       may scroll internally on undersized demo viewports. */
+       optional footer (bottom). Inactive views are hidden; views do not scroll
+       as a whole — only designated long-content regions scroll internally. */
     .view {
       display: none;
       position: absolute;
@@ -139,7 +150,7 @@
       margin: 0;
       padding: 0;
       max-width: none;
-      overflow: auto;
+      overflow: hidden;
     }
 
     .view.is-active {
@@ -205,11 +216,9 @@
       flex-direction: column;
       gap: 1.1rem;
       padding: 1.4rem 2rem;
-      /* Pinned header/footer + scrollable middle: on the 3840×2160 kiosk
-         the body fits exactly so no scrollbar appears; on smaller demo
-         viewports content scrolls within the body region so header and
-         footer stay where the visitor expects them. */
-      overflow: auto;
+      /* Pinned header/footer; body does not scroll — long content uses
+         view-specific internal scroll regions (modal, focus cards, etc.). */
+      overflow: hidden;
     }
 
     /* Per-view footer: bottom action bar reachable from a seated/standing
@@ -273,12 +282,12 @@
     /* Persistent prototype disclaimer — top-right inside the app-stage. */
     .spike-disclaimer {
       position: absolute;
-      top: clamp(0.4rem, 0.75vh, 0.55rem);
-      right: clamp(0.55rem, 1.1vw, 0.85rem);
+      top: 0.5rem;
+      right: 0.75rem;
       bottom: auto;
       margin: 0;
       padding: 0.15rem 0.45rem;
-      font-size: clamp(0.52rem, 0.8vh, 0.6rem);
+      font-size: 0.58rem;
       font-weight: 400;
       line-height: 1.2;
       color: #64748b;
@@ -972,18 +981,6 @@
       letter-spacing: -0.02em;
       color: var(--airmf-navy);
       text-transform: none;
-    }
-
-    @media (max-width: 900px) {
-      #view-airmf-intro {
-        --intro-canvas-pad: 2rem;
-        --intro-headline-size: 2.75rem;
-      }
-
-      .intro-columns {
-        grid-template-columns: 1fr;
-        gap: 1.5rem;
-      }
     }
 
     /* Stylized aiRMF wheel placeholder — concept anchor, not final artwork. */
@@ -1747,36 +1744,6 @@
       border-radius: 0.2rem;
     }
 
-    @container app-stage (max-width: 1100px) {
-      .explore-map-layout {
-        grid-template-columns: 1fr;
-        grid-template-rows: auto 1fr;
-      }
-
-      .explore-sidebar {
-        border-bottom: none;
-        padding-bottom: 0.65rem;
-      }
-
-      .explore-sidebar-content {
-        justify-content: flex-start;
-      }
-
-      .explore-category-filters {
-        min-height: auto;
-      }
-
-      .explore-wheel-panel {
-        justify-content: center;
-        padding: 0.25rem 0.5rem;
-      }
-
-      .wheel-stage {
-        width: min(100%, var(--wheel-stage-size, 58cqh), 78rem);
-        height: min(100%, var(--wheel-stage-size, 58cqh), 78rem);
-      }
-    }
-
     .cap-recommend-label {
       display: inline-flex;
       align-items: center;
@@ -2089,25 +2056,6 @@
 
     .focus-contact-card[data-domain="adoption"] .focus-contact-card-email {
       color: #1565c0;
-    }
-
-    @container app-stage (max-width: 1100px) {
-      .focus-columns {
-        grid-template-columns: 1fr;
-      }
-
-      .focus-col-visual {
-        padding-right: 0;
-        margin-right: 0;
-        border-right: none;
-        border-bottom: 1px solid #d1d5db;
-        padding-bottom: 1rem;
-        margin-bottom: 1rem;
-      }
-
-      .focus-cards-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-      }
     }
 
     .empty-state {
@@ -2425,21 +2373,6 @@
       padding-bottom: clamp(0.35rem, 0.65cqh, 0.5rem);
       align-items: start;
       transform: translateY(-0.35rem);
-    }
-
-    @container app-stage (max-width: 900px) {
-      .modal-overview {
-        grid-template-columns: 1fr;
-      }
-
-      .modal-content[data-modal-view="work-area"] .modal-overview {
-        grid-template-columns: 1fr;
-      }
-
-      .modal-overview-art {
-        min-height: 6.5rem;
-        max-height: 9.5rem;
-      }
     }
 
     .modal-overview-art {
@@ -2797,12 +2730,6 @@
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: clamp(0.42rem, 0.8cqw, 0.58rem);
-    }
-
-    @container app-stage (max-width: 768px) {
-      .modal-work-panels {
-        grid-template-columns: 1fr;
-      }
     }
 
     .modal-work-panel {
@@ -3544,55 +3471,6 @@
       line-height: 1.34;
     }
 
-    @media (max-width: 1100px) {
-      .guided-overlay {
-        grid-template-columns: 1fr;
-        grid-template-rows: minmax(0, 1fr) auto;
-      }
-      .guided-panel--question {
-        grid-column: 1;
-        grid-row: 1;
-      }
-      .guided-panel--map-scrim,
-      .guided-panel--recommendations {
-        grid-column: 1;
-        grid-row: 2;
-      }
-      .guided-panel--map-scrim {
-        min-height: 9rem;
-      }
-
-      .guided-alt-explore {
-        padding: 0.85rem 1rem 1rem;
-      }
-
-      .guided-alt-explore-copy {
-        font-size: 0.88rem;
-      }
-
-      .btn-guided-explore-secondary {
-        min-height: 3rem;
-        font-size: 0.92rem;
-      }
-      .guided-recommendation-cards {
-        flex-direction: column;
-        align-items: center;
-      }
-
-      .guided-recommendation-card {
-        width: 100%;
-        max-width: 22rem;
-      }
-      .preview-overlay {
-        padding: 1rem;
-        justify-content: center;
-      }
-      .preview-content {
-        width: 100%;
-        max-width: 28rem;
-        border-radius: 1rem;
-      }
-    }
   </style>
 </head>
 <body>
